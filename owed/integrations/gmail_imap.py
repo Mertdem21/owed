@@ -46,11 +46,11 @@ def _body(msg: email.message.Message) -> str:
         text = payload.decode(part.get_content_charset() or "utf-8", errors="replace")
         (html if part.get_content_type() == "text/html" else plain).append(text)
     if plain:
-        return "\n".join(plain)
+        return "\n".join(plain).replace("\r\n", "\n").replace("\r", "\n")
     raw = "\n".join(html)
     raw = re.sub(r"(?is)<(script|style).*?</\1>", " ", raw)
     raw = re.sub(r"(?i)<br\s*/?>|</p>|</div>|</tr>", "\n", raw)
-    return unescape(re.sub(r"<[^>]+>", " ", raw))
+    return unescape(re.sub(r"<[^>]+>", " ", raw)).replace("\r\n", "\n").replace("\r", "\n")
 
 
 def fetch(limit: int = 40) -> list[Email] | None:
