@@ -34,7 +34,7 @@ def status() -> dict[str, Any]:
     integrations = {**settings.enabled(), "arcee": arcee.healthy()}  # a key without credits is not "live"
     inbox = "gmail" if integrations.get("gmail") else "demo inbox"
     return {"integrations": integrations, "storage": get_store().backend, "today": settings.today().isoformat(),
-            "inbox": inbox,
+            "inbox": inbox, "gmail_address": settings.gmail_address if integrations.get("gmail") else "",
             "arcee_models": {k: v for k, v in arcee._models.items() if k != "available"}}
 
 

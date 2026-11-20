@@ -57,20 +57,30 @@
   @keyframes spin { to { transform: rotate(360deg); } }
   .cta small { display: block; margin-top: 10px; font: 500 12px/1 var(--mono); color: var(--muted); }
 
-  /* inbox */
-  .inbox { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
-  .mail { background: rgba(251,248,241,.8); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px 9px; animation: rise .3s ease both; transition: opacity .3s ease, border-color .3s ease; }
-  .mail .mtop { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
-  .mail .from { font: 600 10px/1.2 var(--mono); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .mail .subj { font-size: 12.5px; line-height: 1.3; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .tagm { flex: none; font: 700 9.5px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; padding: 3px 6px; border-radius: 4px; white-space: nowrap; }
-  .tag-scan { color: var(--muted); background: #e4dccb; }
-  .tag-order { color: #fff; background: var(--green); }
-  .tag-pay { color: #fff; background: #2f5d8a; }
-  .tag-deliv { color: #fff; background: #6b5a2e; }
-  .tag-ignored { color: var(--muted); border: 1px dashed #b7ad97; }
-  .mail.order, .mail.pay, .mail.deliv { border-color: #b9ab8d; }
-  .mail.ignored { opacity: .5; }
+  /* inbox, styled like a mail client */
+  .inbox { background: #fff; border-radius: 14px; box-shadow: 0 10px 28px -16px rgba(25,23,20,.5); overflow: hidden; display: none; }
+  .inbox.on { display: block; }
+  .gm-head { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-bottom: 1px solid #e3e0d8; font: 500 13px/1 var(--sans); color: #444; }
+  .gm-logo { display: inline-flex; align-items: center; gap: 6px; font: 600 15px/1 var(--sans); color: #333; }
+  .gm-logo svg { width: 22px; height: 17px; }
+  .gm-head .acct { margin-left: auto; color: #777; font-size: 12px; }
+  .gm-head .ro { font: 600 10px/1 var(--mono); letter-spacing: .1em; color: var(--green); background: var(--green-soft); border-radius: 999px; padding: 4px 8px; }
+  .gm-list { display: grid; grid-template-columns: 1fr 1fr; }
+  .mail { display: grid; grid-template-columns: 150px 1fr auto auto; align-items: center; gap: 10px; padding: 7px 14px; border-bottom: 1px solid #eeebe4; font-size: 13px; color: #202124; background: #fff; animation: rise .3s ease both; transition: background .3s ease; }
+  .mail:nth-child(odd) { border-right: 1px solid #eeebe4; }
+  .mail .from { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mail .subj { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mail .subj small { color: #5f6368; font-weight: 400; }
+  .mail .when { color: #5f6368; font-size: 12px; white-space: nowrap; }
+  .tagm { font: 600 10.5px/1 var(--sans); padding: 3px 7px; border-radius: 4px; white-space: nowrap; }
+  .tag-scan { color: #5f6368; background: #f1f3f4; }
+  .tag-order { color: #0b5233; background: #d7f0e0; }
+  .tag-pay { color: #1b4f8a; background: #d8e8fb; }
+  .tag-deliv { color: #6b4a00; background: #fbe9c3; }
+  .tag-ignored { color: #80868b; background: #f1f3f4; }
+  .mail.order, .mail.pay, .mail.deliv { background: #fbfaf6; }
+  .mail.ignored { color: #9aa0a6; font-weight: 400; }
+  .mail.ignored .from { font-weight: 500; }
   .mail.ignored .subj { text-decoration: line-through; }
 
   /* section labels */
@@ -260,6 +270,7 @@ function countTo(target) {
 async function loadStatus() {
   const s = await api("/api/status");
   state.inbox = TEST_INBOX ? TEST_INBOX + " inbox" : (s.inbox || "demo inbox");
+  state.account = s.gmail_address || "";
   $("chips").innerHTML = Object.entries(s.integrations).filter(([k]) => k !== "airbyte_gmail").map(([k, v]) =>
     `<span class="chip ${v ? "live" : ""}">${NAMES[k] || k}</span>`).join("")
     + `<span class="chip ${s.storage === "singlestore" ? "live" : ""}">audit: ${s.storage}</span>`;
@@ -306,12 +317,24 @@ function mailKind(r) {
   if (sub.includes("deliver")) return ["deliv", "delivered " + id];
   return ["order", "receipt " + id];
 }
+const GM_SVG = `<svg viewBox="0 0 52 40"><path fill="#4285f4" d="M3.5 40h8.6V18.7L0 9.6V36.5C0 38.4 1.6 40 3.5 40z"/><path fill="#34a853" d="M39.9 40h8.6c1.9 0 3.5-1.6 3.5-3.5V9.6L39.9 18.7z"/><path fill="#fbbc04" d="M39.9 3.5v15.2L52 9.6V5.3c0-4.4-5-6.9-8.5-4.2z"/><path fill="#ea4335" d="M12.1 18.7V3.5L26 13.9 39.9 3.5v15.2L26 29.1z"/><path fill="#c5221f" d="M0 5.3v4.3l12.1 9.1V3.5L8.5 1.1C5 -1.6 0 .9 0 5.3z"/></svg>`;
+function fmtWhen(d) { const t = Date.parse(d); if (isNaN(t)) return ""; return new Date(t).toLocaleDateString("en-US", {month: "short", day: "numeric"}); }
+function senderName(m) {
+  const s = String(m.sender || ""); const dom = s.replace(/^.*@/, "").split(".")[0];
+  return dom ? dom.split("-").map(w => w[0].toUpperCase() + w.slice(1)).join(" ") : s;
+}
 function renderInbox(emails) {
+  const isGmail = state.inbox === "gmail";
   $("inboxlabel").hidden = false;
-  $("inboxlabel").textContent = `Inbox · ${emails.length} emails · ${state.inbox === "gmail" ? "Gmail" : esc(state.inbox)} · read-only`;
-  $("inbox").innerHTML = emails.map((m, i) => `<div class="mail" id="mail-${cssId(m.id)}" style="animation-delay:${i * 35}ms">
-    <div class="mtop"><span class="from">${esc(String(m.sender || "").replace(/^.*@/, "@"))}</span><span class="tagm tag-scan">scanning</span></div>
-    <div class="subj" title="${esc(m.subject)}">${esc(m.subject)}</div></div>`).join("");
+  $("inboxlabel").textContent = `Inbox · ${emails.length} emails · ${isGmail ? "Gmail" : esc(state.inbox)} · read-only`;
+  $("inbox").classList.add("on");
+  $("inbox").innerHTML = `<div class="gm-head"><span class="gm-logo">${isGmail ? GM_SVG + "Gmail" : "Inbox"}</span>
+      <span>Inbox</span><span class="ro">read-only</span><span class="acct">${isGmail ? esc(state.account || "") : "demo inbox"}</span></div>
+    <div class="gm-list">${emails.map((m, i) => `<div class="mail" id="mail-${cssId(m.id)}" style="animation-delay:${i * 35}ms">
+      <span class="from" title="${esc(m.sender)}">${esc(senderName(m))}</span>
+      <span class="subj" title="${esc(m.subject)}">${esc(m.subject)}</span>
+      <span class="tagm tag-scan">scanning</span>
+      <span class="when">${fmtWhen(m.date)}</span></div>`).join("")}</div>`;
 }
 async function tagInbox(report, animate) {
   for (const r of report || []) {
@@ -386,7 +409,7 @@ $("run").onclick = async () => {
   if (state.running) return;
   state.running = true; state.live = {}; state.shown = 0; countTo(0);
   $("run").disabled = true; $("runlabel").textContent = "Agent at work";
-  $("strip").innerHTML = ""; $("inbox").innerHTML = ""; $("inboxlabel").hidden = true;
+  $("strip").innerHTML = ""; $("inbox").innerHTML = ""; $("inbox").classList.remove("on"); $("inboxlabel").hidden = true;
   $("subline").textContent = "Reading your inbox…"; tapeShell();
   const t0 = performance.now();
   const clock = setInterval(() => { const c = $("tapeclock"); if (c) c.textContent = ((performance.now() - t0) / 1000).toFixed(1) + " s"; }, 100);
