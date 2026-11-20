@@ -1,0 +1,288 @@
+"""The Owed agent loop.
+
+ingest -> extract -> detect -> retrieve policy -> read rule -> decide -> autonomy gate -> act -> verify -> notify
+Every step lands in the audit trail.
+"""
+from __future__ import annotations
+
+import logging
+import time
+from concurrent.futures import ThreadPoolExecutor
+from typing import Any
+
+from . import merchant, merchant_client
+from .audit import Recorder, new_run_id
+from .config import settings
+from .decide import decide
+from .detect import find_opportunities
+from .extract import parse_orders
+from .integrations import amplitude, arcee, cognee_memory, gmail_airbyte, senso, statsig_gate
+from .integrations.store import get_store
+from .models import Case, utcnow
+from .policy_check import interpret, retrieve
+
+log = logging.getLogger("owed.agent")
+KIND_LABEL = {"price_adjustment": "Price adjustment", "duplicate_order": "Duplicate order return",
+              "billing_error": "Duplicate charge refund"}
+
+
+def _template_claim(case: Case) -> str:
+    op, rule = case.opportunity, case.rule
+    remedy = {"price_adjustment": f"a price adjustment refund of ${op.amount:.2f}",
+              "duplicate_order": f"a return of the duplicate order and a full refund of ${op.amount:.2f}",
+              "billing_error": f"a refund of the duplicate charge of ${op.amount:.2f}"}[op.kind]
+    return (f"Hello {op.merchant} support,\n\nRegarding order {op.order_id} ({op.item_name}), I am requesting {remedy}. "
+            f"Your policy states: \"{rule.clause_quote if rule else ''}\" "
+            f"This request is within the policy window.\n\nThank you,\nOwed (assistant acting for the customer)")
+
+
+def _claim_message(case: Case, rec: Recorder) -> str:
+    t0 = time.time()
+    op = case.opportunity
+    if arcee.enabled():
+        try:
+            facts = {"store": op.merchant, "order_number": op.order_id, "item": op.item_name,
+                     "amount_usd": op.amount, "request": KIND_LABEL[op.kind],
+                     "policy_sentence": case.rule.clause_quote if case.rule else "", "facts": op.facts}
+            text, meta = arcee.write_claim(facts)
+            if len(text) > 40:
+                rec.step(case.id, "claim_drafted", f"arcee:{meta['model']}", f"Claim message written ({len(text.split())} words)",
+                         {"message": text, "llm": meta}, t0)
+                return text
+        except Exception as exc:  # noqa: BLE001
+            log.warning("Arcee claim writing failed: %s", exc)
+    text = _template_claim(case)
+    rec.step(case.id, "claim_drafted", "template", "Claim message from template", {"message": text}, t0)
+    return text
+
+
+def _memory_text(c: Case, today) -> str:
+    """One plain-English fact per case for Cognee's memory graph."""
+    op = c.opportunity
+    t = (f"On {today.isoformat()}, Owed reviewed a {KIND_LABEL[op.kind].lower()} for {op.merchant} order {op.order_id} "
+         f"({op.item_name}), amount ${op.amount:.2f}.")
+    if c.status == "verified":
+        t += f" Outcome: {op.merchant} approved claim {c.claim_id} and paid refund {c.refund_id} of ${c.amount_recovered:.2f}."
+    elif c.status == "declined":
+        t += f" Outcome: Owed did not file a claim. Reason: {c.decision.reason if c.decision else 'not eligible'}."
+    elif c.status == "rejected":
+        t += f" Outcome: {op.merchant} rejected claim {c.claim_id}."
+    elif c.status == "needs_approval":
+        t += " Outcome: waiting for the customer's approval."
+    else:
+        t += f" Outcome: {c.status}."
+    if c.rule and c.rule.clause_quote:
+        t += f' Policy sentence cited: "{c.rule.clause_quote}"'
+    return t
+
+
+def _remember(cases: list[Case], rec: Recorder, today) -> None:
+    if not cognee_memory.enabled() or not cases:
+        return
+    t0 = time.time()
+    texts = [_memory_text(c, today) for c in cases]
+    try:
+        res = cognee_memory.remember(texts)
+        rec.step(None, "memory_write", "cognee", f"Remembered {len(texts)} outcome(s) for next time", {**res, "texts": texts}, t0)
+    except Exception as exc:  # noqa: BLE001 - memory is optional
+        rec.step(None, "memory_write", "cognee", f"Could not write memory: {exc}", {"texts": texts}, t0, ok=False)
+
+
+def _decision_statement(case: Case) -> tuple[str, str]:
+    """The agent's reading of the store policy as plain claims (store named), for Senso to check against the KB."""
+    op, rule = case.opportunity, case.rule
+    m = op.merchant
+    lines = [rule.clause_quote if rule else ""]
+    if op.kind == "price_adjustment":
+        lines.append(f"At {m}, a price adjustment applies when the price drops within {rule.window_days} days of the purchase date.")
+        if any("marketplace" in x for x in rule.excludes):
+            lines.append(f"{m} does not give price adjustments on items sold by Marketplace sellers.")
+        question = f"What is the {m} price adjustment policy?"
+    elif op.kind == "duplicate_order":
+        lines.append(f"At {m}, a duplicate order can be returned within {rule.window_days} days of delivery.")
+        question = f"What is the {m} policy for duplicate orders?"
+    else:
+        lines.append(f"At {m}, a duplicate charge must be reported within {rule.window_days} days of the charge date.")
+        question = f"What is the {m} policy for duplicate charges?"
+    return " ".join(x for x in lines if x), question
+
+
+def execute_claim(case: Case, rec: Recorder) -> Case:
+    """Act (file the claim at the merchant) and verify the outcome."""
+    op = case.opportunity
+    case.message = _claim_message(case, rec)
+    if senso.enabled():  # verification loop: fact-check our own claim against the knowledge base before acting
+        t0 = time.time()
+        try:
+            statement, question = _decision_statement(case)
+            check = senso.check_text(statement, question)
+            check["statement"] = statement
+            counts = check["counts"]
+            summary = ", ".join(f"{n} {v}" for v, n in counts.items()) or "no checkable claims"
+            if counts.get("conflict"):
+                case.status = "needs_approval"
+                rec.step(case.id, "fact_check", "senso", f"Stopped: Senso found a conflict with the policy ({summary})",
+                         check, t0, ok=False)
+                case.updated_at = utcnow()
+                return case
+            rec.step(case.id, "fact_check", "senso",
+                     f"Senso fact-checked the agent's reading of the policy: {summary}", check, t0)
+        except Exception as exc:  # noqa: BLE001
+            rec.step(case.id, "fact_check", "senso", f"Fact-check unavailable, relying on verified citation: {exc}",
+                     {}, t0, ok=False)
+    mode = "store API" if settings.merchant_base_url else "simulated store API (demo data)"
+    t0 = time.time()
+    claim = merchant_client.file_claim(op.merchant_id, {"type": op.kind, "order_id": op.order_id, "sku": op.sku,
+                                                 "amount": op.amount, "message": case.message})
+    case.claim_id = claim["claim_id"]
+    case.status = "filed"
+    rec.step(case.id, "action", "merchant-api",
+             f"Filed {KIND_LABEL[op.kind].lower()} claim {case.claim_id} at {op.merchant} for ${op.amount:.2f} ({mode})",
+             {"mode": mode, "endpoint": f"POST /merchant/{op.merchant_id}/claims",
+              "claim": {k: v for k, v in claim.items() if k != 'message'}}, t0)
+    t0 = time.time()
+    status = merchant_client.claim_status(case.claim_id)
+    if status["status"] == "approved":
+        case.status = "verified"
+        case.refund_id = status.get("refund_id")
+        case.amount_recovered = float(status.get("refund_amount", 0))
+        rec.step(case.id, "verification", "merchant-api",
+                 f"Verified: {op.merchant} approved, refund {case.refund_id} for ${case.amount_recovered:.2f}",
+                 {"endpoint": f"GET /merchant/claims/{case.claim_id}", "status": status}, t0)
+    else:
+        case.status = "rejected"
+        rec.step(case.id, "verification", "merchant-api", f"Merchant rejected the claim: {status.get('reason')}",
+                 {"status": status}, t0, ok=False)
+    case.updated_at = utcnow()
+    return case
+
+
+def run(reset: bool = False, verbose: bool = False) -> dict[str, Any]:
+    run_id = new_run_id()
+    rec = Recorder(run_id, verbose=verbose)
+    store = get_store()
+    if reset:
+        store.reset()
+        merchant.reset()
+    today = settings.today()
+    cognee_memory.reset_cache()
+    rec.step(None, "start", "owed", f"Run started for {settings.user_id} on {today.isoformat()}",
+             {"integrations": settings.enabled(), "storage": store.backend})
+
+    t0 = time.time()
+    policy = statsig_gate.autonomy_policy()
+    rec.step(None, "autonomy_policy", "statsig" if policy["source"] == "statsig" else "default",
+             f"Autonomy: {'human approval required' if policy['require_approval'] else 'act on my own'} up to "
+             f"${policy['max_auto_claim_usd']:.0f} per claim", policy, t0)
+
+    t0 = time.time()
+    emails, inbox_provider = gmail_airbyte.fetch_emails()
+    rec.step(None, "ingest", inbox_provider, f"Read {len(emails)} emails from the inbox",
+             {"subjects": [e.subject for e in emails]}, t0)
+
+    t0 = time.time()
+    orders, report = parse_orders(emails)
+    receipts = [r for r in report if r.get("receipt")]
+    sie_used = any("sie_entities" in r for r in report)
+    rec.step(None, "extract", "rules + superlinked-sie" if sie_used else "rules",
+             f"{len(receipts)} receipt emails -> {len(orders)} orders "
+             f"({sum(len(o.items) for o in orders)} items, {sum(len(o.transactions) for o in orders)} payments)",
+             {"report": report, "orders": [o.model_dump(mode="json") for o in orders]}, t0)
+
+    t0 = time.time()
+    ops = find_opportunities(orders)
+    rec.step(None, "detect", "merchant-api", f"Found {len(ops)} possible refunds worth ${sum(o.amount for o in ops):.2f}",
+             {"opportunities": [o.model_dump(mode="json") for o in ops]}, t0)
+
+    def process(op) -> Case:
+        case = Case(id=op.id, opportunity=op)
+        rec.step(case.id, "detected", "owed", f"{KIND_LABEL[op.kind]} candidate: {op.item_name} ({op.order_id}), ${op.amount:.2f}",
+                 {"opportunity": op.model_dump(mode="json")})
+
+        t0 = time.time()
+        evidence, rmeta = retrieve(op)
+        case.evidence = evidence
+        top = evidence[0].title if evidence else "nothing"
+        rec.step(case.id, "context", rmeta.get("retriever", "?") + (" + superlinked-sie" if rmeta.get("reranker") else ""),
+                 f"Retrieved {len(evidence)} policy passages; best: {top}",
+                 {"meta": rmeta, "evidence": [e.model_dump() for e in evidence]}, t0)
+
+        if cognee_memory.enabled():  # long-term memory: what happened last time with this store?
+            t0 = time.time()
+            mem = cognee_memory.recall(op.merchant)
+            short = (mem.get("answer") or mem.get("error") or "")[:160].replace("\n", " ")
+            rec.step(case.id, "memory", "cognee", f"Memory of earlier claims with {op.merchant}: {short}",
+                     mem, t0, ok=bool(mem.get("ok")))
+
+        t0 = time.time()
+        rule, imeta = interpret(op, evidence)
+        case.rule = rule
+        rec.step(case.id, "rule", rule.provider,
+                 f"{rule.window_days}-day window from {rule.anchor.replace('_', ' ')}; clause: \"{rule.clause_quote}\""
+                 + (" (verified)" if rule.citation_verified else " (UNVERIFIED)"),
+                 {"rule": rule.model_dump(), "meta": imeta}, t0)
+
+        t0 = time.time()
+        decision = decide(op, rule, today)
+        case.decision = decision
+        rec.step(case.id, "decision", "owed-rules", decision.reason,
+                 {"checks": [c.model_dump() for c in decision.checks]}, t0)
+
+        if not decision.eligible:
+            case.status = "declined"
+            store.save_case(run_id, case)
+            return case
+
+        needs_human = policy["require_approval"] or op.amount > policy["max_auto_claim_usd"]
+        case.autonomy = {**policy, "auto": not needs_human}
+        if needs_human:
+            case.status = "needs_approval"
+            why = "approval gate is on" if policy["require_approval"] else \
+                f"${op.amount:.2f} is above the ${policy['max_auto_claim_usd']:.0f} auto limit"
+            rec.step(case.id, "autonomy_gate", policy["source"], f"Waiting for your approval: {why}", case.autonomy)
+            store.save_case(run_id, case)
+            return case
+        rec.step(case.id, "autonomy_gate", policy["source"],
+                 f"Auto-approved: ${op.amount:.2f} is within the ${policy['max_auto_claim_usd']:.0f} limit", case.autonomy)
+        try:
+            execute_claim(case, rec)
+        except Exception as exc:  # noqa: BLE001 - one failing store must not stop the others
+            case.status = "failed"
+            rec.step(case.id, "action", "merchant-api", f"Could not file the claim: {exc}", ok=False)
+        store.save_case(run_id, case)
+        return case
+
+    workers = max(1, min(settings.parallel_cases, len(ops) or 1))
+    with ThreadPoolExecutor(max_workers=workers) as pool:  # cases are independent -> work them in parallel
+        cases: list[Case] = list(pool.map(process, ops))
+
+    _remember(cases, rec, today)
+    recovered = round(sum(c.amount_recovered for c in cases), 2)
+    pending = [c for c in cases if c.status == "needs_approval"]
+    lines = [f"- {KIND_LABEL[c.opportunity.kind]}: {c.opportunity.item_name} ({c.opportunity.merchant}) "
+             f"${c.amount_recovered:.2f}, refund {c.refund_id}" for c in cases if c.status == "verified"]
+    lines += [f"- Needs your OK: {c.opportunity.item_name} ${c.opportunity.amount:.2f}" for c in pending]
+    body = f"Owed recovered ${recovered:.2f} for you today.\n\n" + "\n".join(lines) + \
+        "\n\nEvery decision, with the policy sentence behind it, is in your audit trail."
+    t0 = time.time()
+    provider, ref = gmail_airbyte.send_email(settings.user_email, f"Owed: ${recovered:.2f} recovered", body)
+    rec.step(None, "notify", provider, f"Sent you a summary: ${recovered:.2f} recovered, {len(pending)} waiting for approval",
+             {"ref": ref, "body": body}, t0)
+    sent = amplitude.flush()
+    return {"run_id": run_id, "recovered": recovered, "cases": [c.model_dump(mode="json") for c in cases],
+            "events": len(rec.events), "amplitude_events": sent, "storage": store.backend,
+            "llm_calls": list(arcee.usage_log)}
+
+
+def approve(case_id: str) -> Case | None:
+    store = get_store()
+    case = store.case(case_id)
+    if not case or case.status != "needs_approval":
+        return case
+    rec = Recorder(new_run_id())
+    rec.step(case.id, "human_approval", "user", f"You approved the claim for ${case.opportunity.amount:.2f}")
+    execute_claim(case, rec)
+    store.save_case(rec.run_id, case)
+    _remember([case], rec, settings.today())
+    amplitude.flush()
+    return case

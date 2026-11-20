@@ -1,0 +1,37 @@
+{
+  "northwind": {
+    "name": "Northwind Electronics",
+    "support_email": "support@northwind-electronics.example",
+    "catalog": {
+      "NW-AUR-200": {"name": "Aurora ANC Wireless Headphones", "price": 199.99, "seller": "Northwind Electronics"},
+      "NW-LUM-27": {"name": "Lumen 27-inch 4K Monitor", "price": 279.00, "seller": "Northwind Electronics"},
+      "NW-HUB-8": {"name": "8-in-1 USB-C Hub", "price": 44.99, "seller": "GadgetHub (Marketplace seller)"}
+    },
+    "orders": {
+      "NW-48213": {"order_date": "2026-11-12", "delivered": "2026-11-14", "items": [{"sku": "NW-AUR-200", "price": 249.99, "seller": "Northwind Electronics"}], "transactions": [{"id": "NWT-1101", "amount": 249.99, "date": "2026-11-12"}]},
+      "NW-47790": {"order_date": "2026-10-29", "delivered": "2026-11-01", "items": [{"sku": "NW-LUM-27", "price": 329.00, "seller": "Northwind Electronics"}], "transactions": [{"id": "NWT-0988", "amount": 329.00, "date": "2026-10-29"}]},
+      "NW-48102": {"order_date": "2026-11-15", "delivered": "2026-11-18", "items": [{"sku": "NW-HUB-8", "price": 59.99, "seller": "GadgetHub (Marketplace seller)"}], "transactions": [{"id": "NWT-1150", "amount": 59.99, "date": "2026-11-15"}]}
+    }
+  },
+  "cascade": {
+    "name": "Cascade Outfitters",
+    "support_email": "help@cascade-outfitters.example",
+    "catalog": {
+      "CO-RRJ-M-SLT": {"name": "Ridgeline Rain Jacket, Slate, M", "price": 129.00, "seller": "Cascade Outfitters"}
+    },
+    "orders": {
+      "CO-90311": {"order_date": "2026-11-03", "delivered": "2026-11-06", "items": [{"sku": "CO-RRJ-M-SLT", "price": 129.00, "seller": "Cascade Outfitters"}], "transactions": [{"id": "COT-5501", "amount": 129.00, "date": "2026-11-03"}]},
+      "CO-90312": {"order_date": "2026-11-03", "delivered": "2026-11-06", "items": [{"sku": "CO-RRJ-M-SLT", "price": 129.00, "seller": "Cascade Outfitters"}], "transactions": [{"id": "COT-5502", "amount": 129.00, "date": "2026-11-03"}]}
+    }
+  },
+  "brightline": {
+    "name": "Brightline Home",
+    "support_email": "billing@brightline-home.example",
+    "catalog": {
+      "BH-LDC-Q": {"name": "Linen Duvet Cover Set, Queen", "price": 84.50, "seller": "Brightline Home"}
+    },
+    "orders": {
+      "BH-5520": {"order_date": "2026-11-10", "delivered": "2026-11-13", "items": [{"sku": "BH-LDC-Q", "price": 84.50, "seller": "Brightline Home"}], "transactions": [{"id": "TXN-77120", "amount": 84.50, "date": "2026-11-10"}, {"id": "TXN-77168", "amount": 84.50, "date": "2026-11-10"}]}
+    }
+  }
+}

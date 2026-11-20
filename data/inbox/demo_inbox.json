@@ -1,0 +1,98 @@
+[
+  {
+    "id": "msg-001",
+    "from": "orders@northwind-electronics.example",
+    "to": "you@example.com",
+    "date": "2026-11-12T18:24:00Z",
+    "subject": "Your Northwind Electronics order NW-48213 is confirmed",
+    "body": "Northwind Electronics - Order Confirmation\nOrder number: NW-48213\nOrder date: November 12, 2026\n\nItem: Aurora ANC Wireless Headphones\nSKU: NW-AUR-200\nSold by: Northwind Electronics\nQty: 1\nPrice: $249.99\n\nOrder total: $249.99\nPayment: Visa ending 4421\n\nThanks for shopping with Northwind."
+  },
+  {
+    "id": "msg-002",
+    "from": "orders@northwind-electronics.example",
+    "to": "you@example.com",
+    "date": "2026-10-29T16:02:00Z",
+    "subject": "Your Northwind Electronics order NW-47790 is confirmed",
+    "body": "Northwind Electronics - Order Confirmation\nOrder number: NW-47790\nOrder date: October 29, 2026\n\nItem: Lumen 27-inch 4K Monitor\nSKU: NW-LUM-27\nSold by: Northwind Electronics\nQty: 1\nPrice: $329.00\n\nOrder total: $329.00\nPayment: Visa ending 4421"
+  },
+  {
+    "id": "msg-003",
+    "from": "orders@northwind-electronics.example",
+    "to": "you@example.com",
+    "date": "2026-11-15T09:41:00Z",
+    "subject": "Your Northwind Electronics order NW-48102 is confirmed",
+    "body": "Northwind Electronics - Order Confirmation\nOrder number: NW-48102\nOrder date: November 15, 2026\n\nItem: 8-in-1 USB-C Hub\nSKU: NW-HUB-8\nSold by: GadgetHub (Marketplace seller)\nQty: 1\nPrice: $59.99\n\nOrder total: $59.99\nPayment: Visa ending 4421"
+  },
+  {
+    "id": "msg-004",
+    "from": "hello@cascade-outfitters.example",
+    "to": "you@example.com",
+    "date": "2026-11-03T22:02:00Z",
+    "subject": "Cascade Outfitters order CO-90311 received",
+    "body": "Cascade Outfitters - Order Confirmation\nOrder number: CO-90311\nOrder date: November 3, 2026\n\nItem: Ridgeline Rain Jacket, Slate, M\nSKU: CO-RRJ-M-SLT\nSold by: Cascade Outfitters\nQty: 1\nPrice: $129.00\n\nOrder total: $129.00\nPayment: Mastercard ending 0193"
+  },
+  {
+    "id": "msg-005",
+    "from": "hello@cascade-outfitters.example",
+    "to": "you@example.com",
+    "date": "2026-11-03T22:09:00Z",
+    "subject": "Cascade Outfitters order CO-90312 received",
+    "body": "Cascade Outfitters - Order Confirmation\nOrder number: CO-90312\nOrder date: November 3, 2026\n\nItem: Ridgeline Rain Jacket, Slate, M\nSKU: CO-RRJ-M-SLT\nSold by: Cascade Outfitters\nQty: 1\nPrice: $129.00\n\nOrder total: $129.00\nPayment: Mastercard ending 0193"
+  },
+  {
+    "id": "msg-006",
+    "from": "shipping@cascade-outfitters.example",
+    "to": "you@example.com",
+    "date": "2026-11-06T19:15:00Z",
+    "subject": "Delivered: Cascade Outfitters order CO-90311",
+    "body": "Your package was delivered.\nOrder number: CO-90311\nDelivered on: November 6, 2026"
+  },
+  {
+    "id": "msg-007",
+    "from": "shipping@cascade-outfitters.example",
+    "to": "you@example.com",
+    "date": "2026-11-06T19:16:00Z",
+    "subject": "Delivered: Cascade Outfitters order CO-90312",
+    "body": "Your package was delivered.\nOrder number: CO-90312\nDelivered on: November 6, 2026"
+  },
+  {
+    "id": "msg-008",
+    "from": "orders@brightline-home.example",
+    "to": "you@example.com",
+    "date": "2026-11-10T15:30:00Z",
+    "subject": "Brightline Home order BH-5520 confirmed",
+    "body": "Brightline Home - Order Confirmation\nOrder number: BH-5520\nOrder date: November 10, 2026\n\nItem: Linen Duvet Cover Set, Queen\nSKU: BH-LDC-Q\nSold by: Brightline Home\nQty: 1\nPrice: $84.50\n\nOrder total: $84.50\nPayment: Visa ending 4421"
+  },
+  {
+    "id": "msg-009",
+    "from": "payments@brightline-home.example",
+    "to": "you@example.com",
+    "date": "2026-11-10T15:31:00Z",
+    "subject": "Payment received for order BH-5520",
+    "body": "Brightline Home - Payment Receipt\nOrder number: BH-5520\nTransaction ID: TXN-77120\nCharged on: November 10, 2026\nAmount: $84.50\nPayment: Visa ending 4421"
+  },
+  {
+    "id": "msg-010",
+    "from": "payments@brightline-home.example",
+    "to": "you@example.com",
+    "date": "2026-11-10T15:33:00Z",
+    "subject": "Payment received for order BH-5520",
+    "body": "Brightline Home - Payment Receipt\nOrder number: BH-5520\nTransaction ID: TXN-77168\nCharged on: November 10, 2026\nAmount: $84.50\nPayment: Visa ending 4421"
+  },
+  {
+    "id": "msg-011",
+    "from": "news@northwind-electronics.example",
+    "to": "you@example.com",
+    "date": "2026-11-18T12:00:00Z",
+    "subject": "Black Friday preview: up to 40% off audio",
+    "body": "Our biggest sale of the year starts next week. Headphones, speakers and more. Unsubscribe anytime."
+  },
+  {
+    "id": "msg-012",
+    "from": "sam@example.com",
+    "to": "you@example.com",
+    "date": "2026-11-19T20:10:00Z",
+    "subject": "Dinner on Saturday?",
+    "body": "Hey! Are we still on for dinner on Saturday at 7?"
+  }
+]

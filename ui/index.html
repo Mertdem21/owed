@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Owed - your money back, with receipts</title>
+<style>
+  :root {
+    --bg: #f6f5f1; --panel: #ffffff; --ink: #1c1c1a; --muted: #6b6a64; --line: #e4e2db;
+    --money: #0f7a4a; --money-soft: #e3f3ea; --warn: #9a5b00; --warn-soft: #fbf0dc;
+    --bad: #a3322a; --bad-soft: #f8e4e1; --info-soft: #eef0f6; --radius: 12px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif; }
+  header { display: flex; align-items: center; justify-content: space-between; padding: 18px 32px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  .brand { display: flex; align-items: baseline; gap: 12px; }
+  .brand b { font-size: 22px; letter-spacing: -0.02em; }
+  .brand span { color: var(--muted); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+  .chip { font-size: 12px; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); background: var(--panel); white-space: nowrap; }
+  .chip.live { color: var(--money); border-color: #b9dcc8; background: var(--money-soft); }
+  main { max-width: 1240px; margin: 0 auto; padding: 28px 32px 60px; }
+  .hero { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 28px; }
+  .total { font-size: 56px; font-weight: 700; letter-spacing: -0.03em; color: var(--money); font-variant-numeric: tabular-nums; line-height: 1; }
+  .sub { color: var(--muted); margin-top: 8px; }
+  button { font: inherit; cursor: pointer; border-radius: 10px; border: 1px solid var(--ink); background: var(--ink); color: #fff; padding: 11px 20px; font-weight: 600; }
+  button.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+  button:disabled { opacity: .5; cursor: wait; }
+  .grid { display: grid; grid-template-columns: 380px 1fr; gap: 24px; align-items: start; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); }
+  .list { padding: 8px; }
+  .case { padding: 14px 14px 14px 16px; border-radius: 10px; cursor: pointer; display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; }
+  .case + .case { margin-top: 4px; }
+  .case:hover { background: #f3f2ed; }
+  .case.sel { background: #efeee8; box-shadow: inset 3px 0 0 var(--ink); }
+  .case .t { font-weight: 600; }
+  .case .m { color: var(--muted); font-size: 13px; }
+  .amt { font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+  .status { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; justify-self: end; }
+  .s-verified { background: var(--money-soft); color: var(--money); }
+  .s-declined, .s-rejected { background: #eeede8; color: var(--muted); }
+  .s-needs_approval { background: var(--warn-soft); color: var(--warn); }
+  .s-filed { background: var(--info-soft); color: #3b4a7a; }
+  .detail { padding: 26px 28px; }
+  .detail h2 { margin: 0; font-size: 22px; letter-spacing: -0.01em; }
+  .detail .meta { color: var(--muted); margin: 4px 0 18px; }
+  .section-label { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 22px 0 10px; font-weight: 600; }
+  .reason { padding: 12px 14px; border-radius: 10px; background: var(--money-soft); color: #0b5233; font-weight: 600; }
+  .reason.no { background: #eeede8; color: var(--ink); }
+  .checks { list-style: none; padding: 0; margin: 0; }
+  .checks li { display: grid; grid-template-columns: 22px 1fr; padding: 6px 0; border-bottom: 1px dashed var(--line); }
+  .checks li:last-child { border-bottom: 0; }
+  .ok { color: var(--money); font-weight: 700; } .x { color: var(--bad); font-weight: 700; }
+  .quote { border-left: 3px solid var(--ink); padding: 4px 0 4px 14px; font-size: 16px; }
+  .src { color: var(--muted); font-size: 13px; margin-top: 6px; }
+  .timeline { list-style: none; padding: 0; margin: 0; position: relative; }
+  .timeline li { position: relative; padding: 0 0 16px 22px; }
+  .timeline li::before { content: ""; position: absolute; left: 5px; top: 7px; width: 9px; height: 9px; border-radius: 50%; background: var(--ink); }
+  .timeline li::after { content: ""; position: absolute; left: 9px; top: 18px; bottom: 0; width: 1px; background: var(--line); }
+  .timeline li:last-child::after { display: none; }
+  .step { font-weight: 600; text-transform: capitalize; }
+  .prov { font-size: 12px; padding: 1px 7px; border-radius: 6px; background: var(--info-soft); color: #3b4a7a; margin-left: 8px; font-weight: 500; }
+  .ms { color: var(--muted); font-size: 12px; margin-left: 6px; }
+  .sum { color: #3d3d39; }
+  details { margin-top: 4px; } summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+  pre { white-space: pre-wrap; background: #f6f5f1; border-radius: 8px; padding: 10px 12px; font-size: 12px; max-height: 260px; overflow: auto; }
+  .empty { padding: 60px 28px; text-align: center; color: var(--muted); }
+  .runlog { margin-top: 24px; padding: 18px 22px; }
+  .approve { margin-top: 14px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><b>Owed</b><span>Your money back after you shop, with receipts for every decision.</span></div>
+  <div class="chips" id="chips"></div>
+</header>
+<main>
+  <section class="hero">
+    <div>
+      <div class="total" id="total">$0.00</div>
+      <div class="sub" id="subline">Run the agent to scan your inbox for money you are owed.</div>
+    </div>
+    <button id="run">Run agent</button>
+  </section>
+  <section class="grid">
+    <div class="panel list" id="list"><div class="empty">No cases yet.</div></div>
+    <div class="panel detail" id="detail"><div class="empty">Select a case to see what the agent did and why.</div></div>
+  </section>
+  <section class="panel runlog" id="runlog" hidden></section>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+const money = (n) => "$" + Number(n || 0).toFixed(2);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const LABEL = {price_adjustment: "Price adjustment", duplicate_order: "Duplicate order", billing_error: "Duplicate charge"};
+const STATUS = {verified: "Refund verified", declined: "Not eligible", needs_approval: "Needs your OK", filed: "Filed", rejected: "Rejected", failed: "Failed"};
+const NAMES = {senso: "Senso", superlinked_sie: "Superlinked SIE", arcee: "Arcee", amplitude: "Amplitude", statsig: "Statsig", singlestore: "SingleStore", cognee: "Cognee", airbyte_gmail: "Airbyte Gmail"};
+let state = {cases: [], selected: null, run: null};
+
+async function api(path, opts) { const r = await fetch(path, opts); if (!r.ok) throw new Error(await r.text()); return r.json(); }
+
+async function loadStatus() {
+  const s = await api("/api/status");
+  $("chips").innerHTML = Object.entries(s.integrations).map(([k, v]) =>
+    `<span class="chip ${v ? "live" : ""}" title="${v ? "live" : "fallback"}">${NAMES[k] || k}${v ? "" : " · off"}</span>`).join("")
+    + `<span class="chip ${s.storage === "singlestore" ? "live" : ""}">store: ${s.storage}</span>`;
+}
+
+async function loadCases(selectId) {
+  const d = await api("/api/cases");
+  state.cases = d.cases; state.run = d.latest_run_id;
+  $("total").textContent = money(d.recovered);
+  const n = (st) => d.cases.filter(c => c.status === st).length;
+  $("subline").textContent = d.cases.length
+    ? `${n("verified")} refunds verified · ${n("declined")} declined with reasons · ${n("needs_approval")} waiting for you`
+    : "Run the agent to scan your inbox for money you are owed.";
+  $("list").innerHTML = d.cases.length ? d.cases.map(c => `
+    <div class="case" data-id="${esc(c.id)}">
+      <div class="t">${esc(c.opportunity.item_name)}</div>
+      <div class="amt">${money(c.status === "verified" ? c.amount_recovered : c.opportunity.amount)}</div>
+      <div class="m">${esc(c.opportunity.merchant)} · ${LABEL[c.opportunity.kind]}</div>
+      <span class="status s-${c.status}">${STATUS[c.status] || c.status}</span>
+    </div>`).join("") : `<div class="empty">No cases yet.</div>`;
+  document.querySelectorAll(".case").forEach(el => el.onclick = () => select(el.dataset.id));
+  const first = selectId || (d.cases.find(c => c.status === "verified") || d.cases[0] || {}).id;
+  if (first) select(first);
+  if (state.run) loadRunLog(state.run);
+}
+
+async function select(id) {
+  state.selected = id;
+  document.querySelectorAll(".case").forEach(el => el.classList.toggle("sel", el.dataset.id === id));
+  const {case: c, events} = await api("/api/cases/" + encodeURIComponent(id));
+  const dec = c.decision || {checks: []};
+  const rule = c.rule || {};
+  const best = (c.evidence || [])[0] || {};
+  $("detail").innerHTML = `
+    <h2>${esc(c.opportunity.item_name)}</h2>
+    <div class="meta">${esc(c.opportunity.merchant)} · order ${esc(c.opportunity.order_id)} · ${LABEL[c.opportunity.kind]} · ${money(c.opportunity.amount)}</div>
+    <div class="reason ${dec.eligible ? "" : "no"}">${esc(dec.reason || "")}</div>
+    ${c.status === "needs_approval" ? `<button class="approve" onclick="approve('${esc(c.id)}')">Approve and file claim</button>` : ""}
+    <div class="section-label">Policy the decision rests on</div>
+    <div class="quote">“${esc(rule.clause_quote)}”</div>
+    <div class="src">${esc(best.title || "")} · source ${esc(best.source_id || "")} · read by ${esc(rule.provider || "")} · ${rule.citation_verified ? "citation verified against source" : "citation NOT verified"}</div>
+    ${factCheckHtml(events)}
+    <div class="section-label">Checks</div>
+    <ul class="checks">${dec.checks.map(k => `<li><span class="${k.passed ? "ok" : "x"}">${k.passed ? "✓" : "✗"}</span><span><b>${esc(k.name)}</b> - ${esc(k.detail)}</span></li>`).join("")}</ul>
+    <div class="section-label">What the agent did</div>
+    <ul class="timeline">${events.map(stepHtml).join("")}</ul>`;
+}
+
+function factCheckHtml(events) {
+  const fc = events.filter(e => e.step === "fact_check").pop();
+  if (!fc || !(fc.data || {}).verdicts) return "";
+  const d = fc.data, m = d.metrics || {};
+  const color = {verified: "ok", conflict: "x", unsupported: "x"};
+  return `<div class="section-label">Fact-check by Senso${m.accuracy_pct != null ? ` · accuracy ${m.accuracy_pct}% · coverage ${m.coverage_pct}%` : ""}</div>
+    <ul class="checks">${d.verdicts.map(v => `<li><span class="${color[v.verdict] || ""}">${v.verdict === "verified" ? "✓" : (v.verdict === "conflict" ? "✗" : "·")}</span>
+      <span><b>${esc(v.verdict)}</b> - ${esc(v.claim)}</span></li>`).join("")}</ul>`;
+}
+
+function stepHtml(e) {
+  const d = e.data || {};
+  const extra = d.message ? `<details><summary>Claim message</summary><pre>${esc(d.message)}</pre></details>`
+    : (Object.keys(d).length ? `<details><summary>Details</summary><pre>${esc(JSON.stringify(d, null, 2))}</pre></details>` : "");
+  return `<li><span class="step">${esc(e.step.replace(/_/g, " "))}</span><span class="prov">${esc(e.provider)}</span>${e.duration_ms ? `<span class="ms">${e.duration_ms} ms</span>` : ""}
+    <div class="sum">${esc(e.summary)}</div>${extra}</li>`;
+}
+
+async function loadRunLog(runId) {
+  const ev = await api(`/api/runs/${encodeURIComponent(runId)}/events`);
+  $("runlog").hidden = !ev.length;
+  $("runlog").innerHTML = `<div class="section-label" style="margin-top:0">Run log · ${esc(runId)}</div><ul class="timeline">${ev.map(stepHtml).join("")}</ul>`;
+}
+
+async function approve(id) { await api(`/api/cases/${encodeURIComponent(id)}/approve`, {method: "POST"}); await loadCases(id); }
+
+$("run").onclick = async () => {
+  $("run").disabled = true; $("run").textContent = "Agent is working…";
+  try { await api("/api/run?reset=true", {method: "POST"}); await loadCases(); }
+  catch (e) { $("subline").textContent = "Run failed: " + e.message.slice(0, 200); }
+  finally { $("run").disabled = false; $("run").textContent = "Run agent"; }
+};
+loadStatus(); loadCases();
+</script>
+</body>
+</html>
