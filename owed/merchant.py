@@ -89,6 +89,12 @@ def _evaluate(c: dict[str, Any]) -> tuple[bool, str, float]:
     if not c.get("message"):
         return False, "Claim needs a description.", 0.0
     kind = c.get("type")
+    # A real support desk refuses to pay the same claim twice.
+    for other in _claims().values():
+        if (other is not c and other.get("claim_id") != c.get("claim_id") and other.get("status") == "approved"
+                and other.get("order_id") == c.get("order_id") and other.get("type") == kind
+                and other.get("sku") == c.get("sku")):
+            return False, f"Already refunded under claim {other['claim_id']}.", 0.0
     if kind == "price_adjustment":
         item = next((i for i in order["items"] if i["sku"] == c.get("sku")), None)
         rule = rules.get("price_adjustment")
@@ -96,6 +102,10 @@ def _evaluate(c: dict[str, Any]) -> tuple[bool, str, float]:
             return False, "Item not eligible for price adjustment.", 0.0
         if "marketplace" in item["seller"].lower():
             return False, "Marketplace items are excluded.", 0.0
+        flags = " ".join(str(store["catalog"].get(item["sku"], {}).get("flags", "")).lower().replace("_", " ").replace("-", " ").split())
+        excluded = [x.replace("_", " ") for x in rule.get("excludes", []) if x != "marketplace" and x.replace("_", " ") in flags]
+        if excluded:
+            return False, f"Excluded from price adjustments ({', '.join(excluded)}).", 0.0
         age = (today - date.fromisoformat(order["order_date"])).days
         if age > rule["window_days"]:
             return False, f"Purchased {age} days ago; window is {rule['window_days']} days.", 0.0
@@ -112,8 +122,11 @@ def _evaluate(c: dict[str, Any]) -> tuple[bool, str, float]:
         return True, "Return authorized; prepaid label emailed. Refund issued on receipt scan.", total
     if kind == "billing_error":
         txns = order.get("transactions", [])
-        if len(txns) < 2:
-            return False, "Only one charge found for this order.", 0.0
-        extra = round(sum(t["amount"] for t in txns[1:]), 2)
-        return True, f"Duplicate charge {txns[-1]['id']} reversed.", min(extra, float(c.get("amount", extra)))
+        seen, dups = [], []
+        for t in txns:
+            (dups if any(abs(s["amount"] - t["amount"]) < 0.01 for s in seen) else seen).append(t)
+        if not dups:
+            return False, "No duplicate charge found for this order (different amounts are separate charges).", 0.0
+        extra = round(sum(t["amount"] for t in dups), 2)
+        return True, f"Duplicate charge {', '.join(t['id'] for t in dups)} reversed.", min(extra, float(c.get("amount", extra)))
     return False, f"Unknown claim type {kind}.", 0.0

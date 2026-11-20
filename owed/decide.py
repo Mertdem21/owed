@@ -6,6 +6,11 @@ from datetime import date, timedelta
 from .models import Check, Decision, Opportunity, Rule
 
 
+def _norm(text: str) -> str:
+    """'Open-Box' / 'open_box' / 'OPEN BOX' -> 'open box'."""
+    return " ".join(str(text).lower().replace("_", " ").replace("-", " ").split())
+
+
 def _anchor(op: Opportunity, rule: Rule) -> tuple[date | None, str]:
     f = op.facts
     if rule.anchor == "delivery_date":
@@ -42,6 +47,12 @@ def decide(op: Opportunity, rule: Rule, today: date) -> Decision:
         excluded = "marketplace" in seller.lower() and any("marketplace" in x for x in rule.excludes)
         checks.append(Check(name="seller eligible", passed=not excluded,
                             detail=f"sold by {seller}" + (" - marketplace sellers are excluded" if excluded else "")))
+        # Every other exclusion in the policy (clearance, open-box, final sale, ...) is checked against the item itself.
+        item_text = _norm(f"{op.item_name} {op.facts.get('item_flags', '')}")
+        hits = [x for x in rule.excludes if "marketplace" not in x and _norm(x) and _norm(x) in item_text]
+        checks.append(Check(name="item not excluded", passed=not hits,
+                            detail=(f"{op.item_name} is excluded by the policy ({', '.join(_norm(h) for h in hits)})" if hits
+                                    else f"no exclusion applies ({', '.join(_norm(x) for x in rule.excludes) or 'none listed'} checked)")))
     checks.append(Check(name="amount owed", passed=op.amount > 0, detail=f"${op.amount:.2f}"))
     eligible = all(c.passed for c in checks)
     failed = [c for c in checks if not c.passed]

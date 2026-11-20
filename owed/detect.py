@@ -18,7 +18,7 @@ def find_opportunities(orders: list[Order]) -> list[Opportunity]:
                     id=f"{o.order_id}:{item.sku}:price", kind="price_adjustment", merchant_id=o.merchant_id,
                     merchant=o.merchant, order_id=o.order_id, sku=item.sku, item_name=item.name, amount=diff,
                     facts={"paid": item.price, "current_price": live["price"], "seller": item.seller,
-                           "order_date": o.order_date},
+                           "order_date": o.order_date, "item_flags": live.get("flags", "")},
                     evidence_email_ids=o.source_email_ids))
 
     # 2) The same item ordered twice within a day -> the later order is a duplicate
@@ -42,14 +42,23 @@ def find_opportunities(orders: list[Order]) -> list[Opportunity]:
                            "delivered": dup.delivered},
                     evidence_email_ids=first.source_email_ids + dup.source_email_ids))
 
-    # 3) Charged more than once for one order
+    # 3) Charged more than once for one order. Only an identical amount within a few days counts as a duplicate:
+    #    split shipments or partial charges are legitimate and must not be claimed back.
     for o in orders:
-        if len(o.transactions) > 1:
-            extra = o.transactions[1:]
+        if len(o.transactions) < 2:
+            continue
+        seen: list = []
+        extra = []
+        for t in sorted(o.transactions, key=lambda t: (t.date or o.order_date or t.id, t.id)):
+            twin = next((s for s in seen if abs(s.amount - t.amount) < 0.01 and
+                         (not s.date or not t.date or abs((t.date - s.date).days) <= 3)), None)
+            (extra if twin else seen).append(t)
+        if extra:
             found.append(Opportunity(
                 id=f"{o.order_id}:double-charge", kind="billing_error", merchant_id=o.merchant_id,
                 merchant=o.merchant, order_id=o.order_id, item_name=", ".join(i.name for i in o.items),
                 amount=round(sum(t.amount for t in extra), 2),
-                facts={"transactions": [t.id for t in o.transactions], "charge_date": o.transactions[-1].date},
+                facts={"transactions": [t.id for t in o.transactions], "duplicate_transactions": [t.id for t in extra],
+                       "charge_date": extra[-1].date},
                 evidence_email_ids=o.source_email_ids))
     return found
