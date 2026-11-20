@@ -34,7 +34,38 @@ _S2_SCHEMA = [
 ]
 
 
+_DNS_ERRORS = ("nodename nor servname", "name or service not known", "getaddrinfo", "temporary failure in name resolution")
+
+
+def _doh_resolve(host: str) -> str | None:
+    """Resolve a host through DNS-over-HTTPS (Google). Used when the OS resolver has a stale negative cache."""
+    import httpx
+
+    r = httpx.get("https://dns.google/resolve", params={"name": host, "type": "A"}, timeout=6)
+    for ans in r.json().get("Answer", []):
+        if ans.get("type") == 1:
+            return ans.get("data")
+    return None
+
+
 def _connect_s2(url: str) -> Any:
+    """Connect; if the OS cannot resolve the host (e.g. a cached miss after the cluster was paused), retry via DoH."""
+    from urllib.parse import urlsplit, urlunsplit
+
+    try:
+        return _connect_s2_direct(url)
+    except Exception as exc:  # noqa: BLE001
+        if not any(e in str(exc).lower() for e in _DNS_ERRORS):
+            raise
+        parts = urlsplit(url)
+        ip = _doh_resolve(parts.hostname or "")
+        if not ip:
+            raise
+        log.warning("System DNS could not resolve %s; connecting to %s (DNS-over-HTTPS)", parts.hostname, ip)
+        return _connect_s2_direct(urlunsplit(parts._replace(netloc=parts.netloc.replace(parts.hostname, ip))))
+
+
+def _connect_s2_direct(url: str) -> Any:
     """Connect to SingleStore; create the database named in the URL if it does not exist yet."""
     import singlestoredb as s2  # type: ignore
     from urllib.parse import urlsplit, urlunsplit
