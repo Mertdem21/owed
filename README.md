@@ -76,6 +76,30 @@ curl -s localhost:8000/api/sql -H 'content-type: application/json' \
   -d '{"sql":"SELECT case_id, step, provider, summary FROM audit_events ORDER BY id"}'
 ```
 
+## Test inbox (edge cases)
+
+`data/inbox/test_inbox.json` holds 17 fictional emails built to trip the agent up. Run it with
+`uv run python -m tests.test_inbox` (compares every case with the expected result), with
+`uv run python -m owed.cli run --reset --inbox test`, or in the browser by opening the app with `?inbox=test`.
+It never touches Gmail.
+
+| Email(s) | Situation | Expected |
+|---|---|---|
+| Keyboard, -$30 | price drop inside the 14-day window | claim filed and verified |
+| Webcam, -$15 | price drop on the **last day** of the window | claim filed and verified |
+| SSD, -$20 | window missed **by one day** | declined, cites the window |
+| Speaker (Clearance), -$20 | clearance items excluded | declined, cites the exclusion |
+| Tablet (open-box), -$30 | open-box items excluded | declined, cites the exclusion |
+| 34" monitor, -$170 | above the $150 autonomy limit | waits for your approval |
+| Down vest, -$30 | store has **no** price-adjustment policy | declined |
+| Blanket, charged twice | duplicate charge reported after 60 days | declined |
+| Bookshelf + lamp, $120 + $45 | two different charges (split payment) | not flagged |
+| Socks ordered twice, 2 days apart | intentional reorder | not flagged |
+| "URGENT: your $500 refund" | phishing from an unknown store | ignored |
+| Newsletter | not a receipt | ignored |
+
+Result: **10/10 correct, $45.00 recovered, 1 waiting for approval.**
+
 ## Demo data
 
 The three stores (Northwind Electronics, Cascade Outfitters, Brightline Home), their policies, orders and the demo inbox are fictional. They live in `data/`. The mock store API (`/merchant/...`) validates every claim against its own rules, independently of the agent. Store actions are labelled as simulated in the audit trail. The earlier-claims history in `data/memory_seed.json` is fictional too; `reset_memory.command` (or `uv run python -m owed.cli memory-reset`) clears Cognee and loads it. The summary email to you is real when Gmail is connected. With Gmail connected, Owed reads your real inbox.

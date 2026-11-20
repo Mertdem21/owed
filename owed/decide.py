@@ -22,8 +22,10 @@ def _anchor(op: Opportunity, rule: Rule) -> tuple[date | None, str]:
 
 def decide(op: Opportunity, rule: Rule, today: date) -> Decision:
     checks: list[Check] = []
+    kind = rule.kind.replace('_', ' ')
     checks.append(Check(name="policy covers this case", passed=bool(rule.window_days),
-                        detail=rule.note or f"{rule.kind.replace('_', ' ')} rule found"))
+                        detail=rule.note or (f"{kind} rule found" if rule.window_days
+                                             else f"the store policy has no {kind} rule")))
     checks.append(Check(name="citation verified", passed=rule.citation_verified,
                         detail="quoted clause found verbatim in retrieved policy text" if rule.citation_verified
                         else "quoted clause not found in sources"))
@@ -40,7 +42,7 @@ def decide(op: Opportunity, rule: Rule, today: date) -> Decision:
                                    f"-> deadline {deadline.isoformat()} ({days_left} days left)" if days_left >= 0 else
                                    f"{anchor_name} {anchor.isoformat()} is {age} days ago; window {rule.window_days} days "
                                    f"closed on {deadline.isoformat()}"))
-    else:
+    elif rule.window_days:
         checks.append(Check(name="inside time window", passed=False, detail=f"no {anchor_name} known"))
     if op.kind == "price_adjustment":
         seller = str(op.facts.get("seller", ""))

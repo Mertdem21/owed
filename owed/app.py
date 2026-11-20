@@ -15,7 +15,7 @@ from pydantic import BaseModel
 from . import agent, merchant
 from .audit import new_run_id
 from .config import ROOT, settings
-from .integrations import arcee
+from .integrations import arcee, gmail_airbyte
 from .integrations.store import get_store
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
@@ -38,9 +38,16 @@ def status() -> dict[str, Any]:
             "arcee_models": {k: v for k, v in arcee._models.items() if k != "available"}}
 
 
+def _check_inbox(inbox: str | None) -> str | None:
+    if inbox and inbox not in gmail_airbyte.local_inboxes():
+        raise HTTPException(400, f"unknown inbox '{inbox}' - available: {', '.join(gmail_airbyte.local_inboxes())}")
+    return inbox or None
+
+
 @app.post("/api/run")
-def run_agent(reset: bool = True) -> dict[str, Any]:
-    return agent.run(reset=reset)
+def run_agent(reset: bool = True, inbox: str | None = None) -> dict[str, Any]:
+    """inbox: run on a local test inbox from data/inbox (e.g. 'test') instead of Gmail / the demo inbox."""
+    return agent.run(reset=reset, inbox=_check_inbox(inbox))
 
 
 _runs: dict[str, dict[str, Any]] = {}
@@ -48,8 +55,9 @@ _run_lock = threading.Lock()
 
 
 @app.post("/api/run/start")
-def run_start(reset: bool = True) -> dict[str, Any]:
+def run_start(reset: bool = True, inbox: str | None = None) -> dict[str, Any]:
     """Start a run in the background; the UI follows it live through /api/runs/{run_id}/feed."""
+    inbox = _check_inbox(inbox)
     if not _run_lock.acquire(blocking=False):
         raise HTTPException(409, "a run is already in progress")
     run_id = new_run_id()
@@ -57,7 +65,7 @@ def run_start(reset: bool = True) -> dict[str, Any]:
 
     def work() -> None:
         try:
-            res = agent.run(reset=reset, run_id=run_id)
+            res = agent.run(reset=reset, run_id=run_id, inbox=inbox)
             _runs[run_id] = {"done": True, "recovered": res["recovered"], "storage": res["storage"],
                              "amplitude_events": res["amplitude_events"], "events_total": res["events"]}
         except Exception as exc:  # noqa: BLE001

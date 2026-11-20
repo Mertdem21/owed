@@ -107,13 +107,22 @@ async def _fetch_gmail(limit: int) -> list[Email]:
     return out
 
 
-def load_local_inbox() -> list[Email]:
-    rows = json.loads((DATA / "inbox" / "demo_inbox.json").read_text())
+def local_inboxes() -> list[str]:
+    """Names of the local inboxes in data/inbox (demo, test, ...)."""
+    return sorted(p.stem.removesuffix("_inbox") for p in (DATA / "inbox").glob("*_inbox.json"))
+
+
+def load_local_inbox(name: str = "demo") -> list[Email]:
+    if name not in local_inboxes():
+        raise ValueError(f"unknown inbox '{name}' - available: {', '.join(local_inboxes())}")
+    rows = json.loads((DATA / "inbox" / f"{name}_inbox.json").read_text())
     return [Email(id=r["id"], sender=r["from"], subject=r["subject"], date=r["date"], body=r["body"]) for r in rows]
 
 
-def fetch_emails(limit: int = 50) -> tuple[list[Email], str]:
-    """Returns (emails, provider)."""
+def fetch_emails(limit: int = 50, inbox: str | None = None) -> tuple[list[Email], str]:
+    """Returns (emails, provider). An explicit local inbox (e.g. 'test') never touches Gmail."""
+    if inbox:
+        return load_local_inbox(inbox), f"{inbox}-inbox"
     if enabled():
         try:
             emails = _run(_fetch_gmail(limit))
