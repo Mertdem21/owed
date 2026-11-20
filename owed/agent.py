@@ -154,7 +154,7 @@ def _fact_check(statement: str, question: str, op) -> dict[str, Any]:
     return best
 
 
-def execute_claim(case: Case, rec: Recorder) -> Case:
+def execute_claim(case: Case, rec: Recorder, before_action=None) -> Case:
     """Act (file the claim at the merchant) and verify the outcome."""
     op = case.opportunity
     case.message = _claim_message(case, rec)
@@ -176,6 +176,8 @@ def execute_claim(case: Case, rec: Recorder) -> Case:
         except Exception as exc:  # noqa: BLE001
             rec.step(case.id, "fact_check", "senso", f"Fact-check unavailable, relying on verified citation: {exc}",
                      {}, t0, ok=False)
+    if before_action:
+        before_action()
     mode = "store API" if settings.merchant_base_url else "simulated store API (demo data)"
     t0 = time.time()
     claim = merchant_client.file_claim(op.merchant_id, {"type": op.kind, "order_id": op.order_id, "sku": op.sku,
@@ -240,6 +242,26 @@ def run(reset: bool = False, verbose: bool = False) -> dict[str, Any]:
     rec.step(None, "detect", "merchant-api", f"Found {len(ops)} possible refunds worth ${sum(o.amount for o in ops):.2f}",
              {"opportunities": [o.model_dump(mode="json") for o in ops]}, t0)
 
+    # Long-term memory (Cognee): one lookup per store, started now and running while cases are worked.
+    mem_pool = ThreadPoolExecutor(max_workers=4)
+    mem_jobs: dict[str, tuple[Any, float]] = {}
+    if cognee_memory.enabled():
+        for m in sorted({o.merchant for o in ops}):
+            mem_jobs[m] = (mem_pool.submit(cognee_memory.recall, m), time.time())
+
+    def record_memory(case: Case) -> None:
+        job = mem_jobs.get(case.opportunity.merchant)
+        if not job:
+            return
+        fut, started = job
+        try:
+            mem = fut.result(timeout=45)
+        except Exception as exc:  # noqa: BLE001 - memory is optional
+            mem = {"ok": False, "answer": "", "error": str(exc)[:200]}
+        short = (mem.get("answer") or mem.get("error") or "")[:160].replace("\n", " ")
+        rec.step(case.id, "memory", "cognee", f"Memory of earlier claims with {case.opportunity.merchant}: {short}",
+                 mem, started, ok=bool(mem.get("ok")))
+
     def process(op) -> Case:
         case = Case(id=op.id, opportunity=op)
         rec.step(case.id, "detected", "owed", f"{KIND_LABEL[op.kind]} candidate: {op.item_name} ({op.order_id}), ${op.amount:.2f}",
@@ -252,13 +274,6 @@ def run(reset: bool = False, verbose: bool = False) -> dict[str, Any]:
         rec.step(case.id, "context", rmeta.get("retriever", "?") + (" + superlinked-sie" if rmeta.get("reranker") else ""),
                  f"Retrieved {len(evidence)} policy passages; best: {top}",
                  {"meta": rmeta, "evidence": [e.model_dump() for e in evidence]}, t0)
-
-        if cognee_memory.enabled():  # long-term memory: what happened last time with this store?
-            t0 = time.time()
-            mem = cognee_memory.recall(op.merchant)
-            short = (mem.get("answer") or mem.get("error") or "")[:160].replace("\n", " ")
-            rec.step(case.id, "memory", "cognee", f"Memory of earlier claims with {op.merchant}: {short}",
-                     mem, t0, ok=bool(mem.get("ok")))
 
         t0 = time.time()
         rule, imeta = interpret(op, evidence)
@@ -276,6 +291,7 @@ def run(reset: bool = False, verbose: bool = False) -> dict[str, Any]:
 
         if not decision.eligible:
             case.status = "declined"
+            record_memory(case)
             store.save_case(run_id, case)
             return case
 
@@ -286,12 +302,13 @@ def run(reset: bool = False, verbose: bool = False) -> dict[str, Any]:
             why = "approval gate is on" if policy["require_approval"] else \
                 f"${op.amount:.2f} is above the ${policy['max_auto_claim_usd']:.0f} auto limit"
             rec.step(case.id, "autonomy_gate", policy["source"], f"Waiting for your approval: {why}", case.autonomy)
+            record_memory(case)
             store.save_case(run_id, case)
             return case
         rec.step(case.id, "autonomy_gate", policy["source"],
                  f"Auto-approved: ${op.amount:.2f} is within the ${policy['max_auto_claim_usd']:.0f} limit", case.autonomy)
         try:
-            execute_claim(case, rec)
+            execute_claim(case, rec, before_action=lambda: record_memory(case))
         except Exception as exc:  # noqa: BLE001 - one failing store must not stop the others
             case.status = "failed"
             rec.step(case.id, "action", "merchant-api", f"Could not file the claim: {exc}", ok=False)
@@ -301,6 +318,7 @@ def run(reset: bool = False, verbose: bool = False) -> dict[str, Any]:
     workers = max(1, min(settings.parallel_cases, len(ops) or 1))
     with ThreadPoolExecutor(max_workers=workers) as pool:  # cases are independent -> work them in parallel
         cases: list[Case] = list(pool.map(process, ops))
+    mem_pool.shutdown(wait=False)
 
     _remember(cases, rec, today)
     recovered = round(sum(c.amount_recovered for c in cases), 2)

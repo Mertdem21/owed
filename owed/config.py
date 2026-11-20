@@ -53,7 +53,7 @@ class Settings:
     default_auto_limit_usd: float = field(default_factory=lambda: float(_env("AUTO_CLAIM_LIMIT_USD", "150")))
     inbox_source: str = field(default_factory=lambda: _env("INBOX_SOURCE", "auto"))  # auto | gmail | local
     merchant_base_url: str = field(default_factory=lambda: _env("MERCHANT_BASE_URL"))  # empty = in-process mock store
-    parallel_cases: int = field(default_factory=lambda: int(_env("PARALLEL_CASES", "4")))
+    parallel_cases: int = field(default_factory=lambda: int(_env("PARALLEL_CASES", "8")))
 
     def today(self) -> date:
         if self.demo_today:
