@@ -5,7 +5,7 @@
     "to": "you@example.com",
     "date": "2026-11-12T18:24:00Z",
     "subject": "Your Northwind Electronics order NW-48213 is confirmed",
-    "body": "Northwind Electronics - Order Confirmation\nOrder number: NW-48213\nOrder date: November 12, 2026\n\nItem: Aurora ANC Wireless Headphones\nSKU: NW-AUR-200\nSold by: Northwind Electronics\nQty: 1\nPrice: $249.99\n\nOrder total: $249.99\nPayment: Visa ending 4421\n\nThanks for shopping with Northwind."
+    "body": "Northwind Electronics - Order Confirmation\nOrder number: NW-48213\nOrder date: November 12, 2026\n\nItem: Apple AirPods Pro (2nd generation)\nSKU: NW-AUR-200\nSold by: Northwind Electronics\nQty: 1\nPrice: $249.99\n\nOrder total: $249.99\nPayment: Visa ending 4421\n\nThanks for shopping with Northwind."
   },
   {
     "id": "msg-002",
@@ -13,7 +13,7 @@
     "to": "you@example.com",
     "date": "2026-10-29T16:02:00Z",
     "subject": "Your Northwind Electronics order NW-47790 is confirmed",
-    "body": "Northwind Electronics - Order Confirmation\nOrder number: NW-47790\nOrder date: October 29, 2026\n\nItem: Lumen 27-inch 4K Monitor\nSKU: NW-LUM-27\nSold by: Northwind Electronics\nQty: 1\nPrice: $329.00\n\nOrder total: $329.00\nPayment: Visa ending 4421"
+    "body": "Northwind Electronics - Order Confirmation\nOrder number: NW-47790\nOrder date: October 29, 2026\n\nItem: LG 27-inch UltraFine 4K Monitor (27UP850)\nSKU: NW-LUM-27\nSold by: Northwind Electronics\nQty: 1\nPrice: $329.00\n\nOrder total: $329.00\nPayment: Visa ending 4421"
   },
   {
     "id": "msg-003",
@@ -21,7 +21,7 @@
     "to": "you@example.com",
     "date": "2026-11-15T09:41:00Z",
     "subject": "Your Northwind Electronics order NW-48102 is confirmed",
-    "body": "Northwind Electronics - Order Confirmation\nOrder number: NW-48102\nOrder date: November 15, 2026\n\nItem: 8-in-1 USB-C Hub\nSKU: NW-HUB-8\nSold by: GadgetHub (Marketplace seller)\nQty: 1\nPrice: $59.99\n\nOrder total: $59.99\nPayment: Visa ending 4421"
+    "body": "Northwind Electronics - Order Confirmation\nOrder number: NW-48102\nOrder date: November 15, 2026\n\nItem: Anker 555 USB-C Hub (8-in-1)\nSKU: NW-HUB-8\nSold by: GadgetHub (Marketplace seller)\nQty: 1\nPrice: $59.99\n\nOrder total: $59.99\nPayment: Visa ending 4421"
   },
   {
     "id": "msg-004",
@@ -29,7 +29,7 @@
     "to": "you@example.com",
     "date": "2026-11-03T22:02:00Z",
     "subject": "Cascade Outfitters order CO-90311 received",
-    "body": "Cascade Outfitters - Order Confirmation\nOrder number: CO-90311\nOrder date: November 3, 2026\n\nItem: Ridgeline Rain Jacket, Slate, M\nSKU: CO-RRJ-M-SLT\nSold by: Cascade Outfitters\nQty: 1\nPrice: $129.00\n\nOrder total: $129.00\nPayment: Mastercard ending 0193"
+    "body": "Cascade Outfitters - Order Confirmation\nOrder number: CO-90311\nOrder date: November 3, 2026\n\nItem: Patagonia Torrentshell 3L Rain Jacket, Slate, M\nSKU: CO-RRJ-M-SLT\nSold by: Cascade Outfitters\nQty: 1\nPrice: $129.00\n\nOrder total: $129.00\nPayment: Mastercard ending 0193"
   },
   {
     "id": "msg-005",
@@ -37,7 +37,7 @@
     "to": "you@example.com",
     "date": "2026-11-03T22:09:00Z",
     "subject": "Cascade Outfitters order CO-90312 received",
-    "body": "Cascade Outfitters - Order Confirmation\nOrder number: CO-90312\nOrder date: November 3, 2026\n\nItem: Ridgeline Rain Jacket, Slate, M\nSKU: CO-RRJ-M-SLT\nSold by: Cascade Outfitters\nQty: 1\nPrice: $129.00\n\nOrder total: $129.00\nPayment: Mastercard ending 0193"
+    "body": "Cascade Outfitters - Order Confirmation\nOrder number: CO-90312\nOrder date: November 3, 2026\n\nItem: Patagonia Torrentshell 3L Rain Jacket, Slate, M\nSKU: CO-RRJ-M-SLT\nSold by: Cascade Outfitters\nQty: 1\nPrice: $129.00\n\nOrder total: $129.00\nPayment: Mastercard ending 0193"
   },
   {
     "id": "msg-006",
@@ -61,7 +61,7 @@
     "to": "you@example.com",
     "date": "2026-11-10T15:30:00Z",
     "subject": "Brightline Home order BH-5520 confirmed",
-    "body": "Brightline Home - Order Confirmation\nOrder number: BH-5520\nOrder date: November 10, 2026\n\nItem: Linen Duvet Cover Set, Queen\nSKU: BH-LDC-Q\nSold by: Brightline Home\nQty: 1\nPrice: $84.50\n\nOrder total: $84.50\nPayment: Visa ending 4421"
+    "body": "Brightline Home - Order Confirmation\nOrder number: BH-5520\nOrder date: November 10, 2026\n\nItem: Stonewashed Linen Duvet Cover Set, Queen\nSKU: BH-LDC-Q\nSold by: Brightline Home\nQty: 1\nPrice: $84.50\n\nOrder total: $84.50\nPayment: Visa ending 4421"
   },
   {
     "id": "msg-009",

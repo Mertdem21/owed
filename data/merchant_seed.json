@@ -4,49 +4,49 @@
     "support_email": "support@northwind-electronics.example",
     "catalog": {
       "NW-AUR-200": {
-        "name": "Aurora ANC Wireless Headphones",
+        "name": "Apple AirPods Pro (2nd generation)",
         "price": 199.99,
         "seller": "Northwind Electronics"
       },
       "NW-LUM-27": {
-        "name": "Lumen 27-inch 4K Monitor",
+        "name": "LG 27-inch UltraFine 4K Monitor (27UP850)",
         "price": 279.0,
         "seller": "Northwind Electronics"
       },
       "NW-HUB-8": {
-        "name": "8-in-1 USB-C Hub",
+        "name": "Anker 555 USB-C Hub (8-in-1)",
         "price": 44.99,
         "seller": "GadgetHub (Marketplace seller)"
       },
       "NW-VTX-KB": {
-        "name": "Vortex Mechanical Keyboard",
+        "name": "Logitech MX Mechanical Keyboard",
         "price": 99.99,
         "seller": "Northwind Electronics"
       },
       "NW-HLO-CAM": {
-        "name": "Halo 4K Webcam",
+        "name": "Logitech C922 Pro Stream Webcam",
         "price": 74.0,
         "seller": "Northwind Electronics"
       },
       "NW-DRF-2T": {
-        "name": "Drift 2TB Portable SSD",
+        "name": "Samsung T7 Shield 2TB Portable SSD",
         "price": 139.0,
         "seller": "Northwind Electronics"
       },
       "NW-PLS-SPK": {
-        "name": "Pulse Bluetooth Speaker - Clearance",
+        "name": "JBL Flip 6 Portable Speaker - Clearance",
         "price": 59.0,
         "seller": "Northwind Electronics",
         "flags": "clearance"
       },
       "NW-NMB-11": {
-        "name": "Nimbus Tablet 11",
+        "name": "Apple iPad (10th generation) 64GB - Open-Box",
         "price": 269.0,
         "seller": "Northwind Electronics",
         "flags": "open_box"
       },
       "NW-LUM-34": {
-        "name": "Lumen 34-inch Ultrawide Monitor",
+        "name": "LG 34-inch UltraGear Curved Monitor",
         "price": 479.0,
         "seller": "Northwind Electronics"
       }
@@ -221,17 +221,17 @@
     "support_email": "help@cascade-outfitters.example",
     "catalog": {
       "CO-RRJ-M-SLT": {
-        "name": "Ridgeline Rain Jacket, Slate, M",
+        "name": "Patagonia Torrentshell 3L Rain Jacket, Slate, M",
         "price": 129.0,
         "seller": "Cascade Outfitters"
       },
       "CO-SDV-L-BLK": {
-        "name": "Summit Down Vest, Black, L",
+        "name": "Patagonia Down Sweater Vest, Black, L",
         "price": 119.0,
         "seller": "Cascade Outfitters"
       },
       "CO-TRS-3P": {
-        "name": "Trail Socks, 3-Pack",
+        "name": "Darn Tough Hiker Micro Crew Socks, 3-Pack",
         "price": 24.0,
         "seller": "Cascade Outfitters"
       }
@@ -334,7 +334,7 @@
     "support_email": "billing@brightline-home.example",
     "catalog": {
       "BH-LDC-Q": {
-        "name": "Linen Duvet Cover Set, Queen",
+        "name": "Stonewashed Linen Duvet Cover Set, Queen",
         "price": 84.5,
         "seller": "Brightline Home"
       },
