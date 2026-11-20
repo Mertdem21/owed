@@ -163,7 +163,8 @@ def check_text(text: str, question: str, max_wait_s: int = 75) -> dict[str, Any]
         verdicts.append({
             "claim": str(merged.get("claim_text") or merged.get("claim") or merged.get("text") or ""),
             "verdict": _verdict(merged),
-            "why": str(merged.get("reason") or merged.get("explanation") or merged.get("rationale") or ""),
+            "why": str(merged.get("reasoning") or merged.get("reason") or merged.get("explanation")
+                       or merged.get("rationale") or ""),
             "quote": str(merged.get("quote") or merged.get("evidence_text") or ""),
             "about_brand": merged.get("about_brand"),
         })

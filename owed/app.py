@@ -83,6 +83,26 @@ def run_feed(run_id: str) -> dict[str, Any]:
     return {"run_id": run_id, **_runs.get(run_id, {"done": True}), "events": feed}
 
 
+@app.get("/api/export")
+def export_run() -> dict[str, Any]:
+    """Snapshot of the latest run (status, live feed, cases, case details) for the hosted replay page.
+    Written to data/runtime/replay.json. Contains no keys."""
+    import json as _json
+    from datetime import datetime, timezone
+
+    from .config import RUNTIME
+
+    run_id = get_store().latest_run_id()
+    cs = cases()
+    data = {"recorded_at": datetime.now(timezone.utc).isoformat(), "run_id": run_id, "status": status(),
+            "run": _runs.get(run_id or "", {"done": True}), "feed": run_feed(run_id)["events"] if run_id else [],
+            "recovered": cs["recovered"], "cases": cs["cases"],
+            "details": {c["id"]: case_detail(c["id"]) for c in cs["cases"]}}
+    text = _json.dumps(data, default=str)
+    (RUNTIME / "replay.json").write_text(text)
+    return {"ok": True, "run_id": run_id, "bytes": len(text), "cases": len(cs["cases"]), "feed": len(data["feed"])}
+
+
 @app.get("/api/cases")
 def cases() -> dict[str, Any]:
     items = [c.model_dump(mode="json") for c in get_store().cases()]

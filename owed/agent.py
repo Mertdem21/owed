@@ -123,6 +123,14 @@ def _provenance(check: dict[str, Any], op) -> dict[str, Any]:
     org = senso.org_name()
     for v in check.get("verdicts", []):
         v["claim_raw"] = v.get("claim", "")
+        why = (v.get("why") or "").lower()
+        if (v.get("verdict") == "conflict" and org and org.lower() in why
+                and any(w in why for w in ("attribut", "organization", "organisation", "entity", "named"))):
+            # Senso's reasoning says the policy text matches and only the owner differs (the store, not our org).
+            # That is not a contradiction of the policy: it neither blocks the claim nor counts as verified.
+            v["senso_verdict"] = "conflict"
+            v["verdict"] = "not_verifiable"
+            v["why"] = "Senso matched the policy text; it only noted the policy belongs to the store, not to our org. " + v.get("why", "")
         if org:  # Senso phrases claims about its organisation; show them about the store they were checked for
             v["claim"] = v["claim"].replace(org, op.merchant)
         q = normalize(v.get("quote", ""))
