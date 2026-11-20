@@ -19,6 +19,7 @@ from .extract import parse_orders
 from .integrations import amplitude, arcee, cognee_memory, gmail_airbyte, senso, statsig_gate
 from .integrations.store import get_store
 from .models import Case, utcnow
+from .policies import load_policies, normalize
 from .policy_check import interpret, retrieve
 
 log = logging.getLogger("owed.agent")
@@ -81,30 +82,76 @@ def _remember(cases: list[Case], rec: Recorder, today) -> None:
         return
     t0 = time.time()
     texts = [_memory_text(c, today) for c in cases]
+    keys = [f"{c.opportunity.merchant_id}:{c.opportunity.order_id}:{c.opportunity.kind}:{c.status}" for c in cases]
     try:
-        res = cognee_memory.remember(texts)
-        rec.step(None, "memory_write", "cognee", f"Remembered {len(texts)} outcome(s) for next time", {**res, "texts": texts}, t0)
+        res = cognee_memory.remember(texts, keys)
+        rec.step(None, "memory_write", "cognee",
+                 f"Remembered {res.get('items', 0)} new outcome(s) for next time" + (f", {res['skipped']} already known" if res.get("skipped") else ""),
+                 {**res, "texts": texts}, t0)
     except Exception as exc:  # noqa: BLE001 - memory is optional
         rec.step(None, "memory_write", "cognee", f"Could not write memory: {exc}", {"texts": texts}, t0, ok=False)
 
 
 def _decision_statement(case: Case) -> tuple[str, str]:
-    """The agent's reading of the store policy as plain claims (store named), for Senso to check against the KB."""
+    """The agent's reading of the store policy as plain claims for Senso to check against the knowledge base.
+
+    Senso only scores claims it sees as being about the organisation's own knowledge base, so the claims are
+    written without the store's name. Which store the evidence came from is checked afterwards (_provenance).
+    """
     op, rule = case.opportunity, case.rule
-    m = op.merchant
-    lines = [rule.clause_quote if rule else ""]
+    w = rule.window_days if rule else 0
     if op.kind == "price_adjustment":
-        lines.append(f"At {m}, a price adjustment applies when the price drops within {rule.window_days} days of the purchase date.")
-        if any("marketplace" in x for x in rule.excludes):
-            lines.append(f"{m} does not give price adjustments on items sold by Marketplace sellers.")
-        question = f"What is the {m} price adjustment policy?"
+        lines = [f"A price adjustment refund is given if the price drops within {w} days of the purchase date."]
+        if rule and any("marketplace" in x for x in rule.excludes):
+            lines.append("Items sold by Marketplace sellers are not eligible for a price adjustment.")
+        question = "What is the price adjustment policy?"
     elif op.kind == "duplicate_order":
-        lines.append(f"At {m}, a duplicate order can be returned within {rule.window_days} days of delivery.")
-        question = f"What is the {m} policy for duplicate orders?"
+        lines = [f"If a customer accidentally places the same order twice, the customer can return the duplicate order "
+                 f"within {w} days of delivery and gets a full refund."]
+        question = "What is the policy for duplicate orders?"
     else:
-        lines.append(f"At {m}, a duplicate charge must be reported within {rule.window_days} days of the charge date.")
-        question = f"What is the {m} policy for duplicate charges?"
-    return " ".join(x for x in lines if x), question
+        lines = [f"If a customer is charged more than once for the same order, every duplicate charge is refunded "
+                 f"in full when it is reported within {w} days of the charge date."]
+        question = "What is the policy for duplicate charges?"
+    return " ".join(lines), question
+
+
+def _provenance(check: dict[str, Any], op) -> dict[str, Any]:
+    """Accept a 'verified' verdict only if Senso's evidence quote comes from THIS store's policy."""
+    pol = load_policies().get(op.merchant_id)
+    own = normalize(" ".join(sec.text for sec in pol.sections)) if pol else ""
+    org = senso.org_name()
+    for v in check.get("verdicts", []):
+        v["claim_raw"] = v.get("claim", "")
+        if org:  # Senso phrases claims about its organisation; show them about the store they were checked for
+            v["claim"] = v["claim"].replace(org, op.merchant)
+        q = normalize(v.get("quote", ""))
+        if v.get("verdict") == "verified":
+            if q and q[:60] in own:
+                v["evidence_store"] = op.merchant
+            else:
+                v["verdict"] = "not_verifiable"
+                v["why"] = "Senso's evidence did not come from this store's policy"
+    counts: dict[str, int] = {}
+    for v in check.get("verdicts", []):
+        counts[v["verdict"]] = counts.get(v["verdict"], 0) + 1
+    check["counts"] = counts
+    return check
+
+
+def _fact_check(statement: str, question: str, op) -> dict[str, Any]:
+    """Ask Senso twice in parallel (question with and without the store name; its claim extraction varies).
+    Any conflict wins, otherwise the run with the most store-verified claims. Both runs stay in the audit data."""
+    store_q = question.replace("What is the ", f"What is the {op.merchant} ", 1)
+    variants = [store_q, question]
+    with ThreadPoolExecutor(max_workers=2) as ex:
+        checks = list(ex.map(lambda q: _provenance(senso.check_text(statement, q), op), variants))
+    conflicts = [c for c in checks if c["counts"].get("conflict")]
+    best = conflicts[0] if conflicts else max(checks, key=lambda c: c["counts"].get("verified", 0))
+    best["statement"] = statement
+    best["attempts"] = [{"question": q, "check_id": c.get("check_id"), "counts": c["counts"]}
+                        for q, c in zip(variants, checks)]
+    return best
 
 
 def execute_claim(case: Case, rec: Recorder) -> Case:
@@ -115,8 +162,7 @@ def execute_claim(case: Case, rec: Recorder) -> Case:
         t0 = time.time()
         try:
             statement, question = _decision_statement(case)
-            check = senso.check_text(statement, question)
-            check["statement"] = statement
+            check = _fact_check(statement, question, op)
             counts = check["counts"]
             summary = ", ".join(f"{n} {v}" for v, n in counts.items()) or "no checkable claims"
             if counts.get("conflict"):

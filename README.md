@@ -73,4 +73,4 @@ curl -s localhost:8000/api/sql -H 'content-type: application/json' \
 
 ## Demo data
 
-The three stores (Northwind Electronics, Cascade Outfitters, Brightline Home), their policies, orders and the demo inbox are fictional. They live in `data/`. The mock store API (`/merchant/...`) validates every claim against its own rules, independently of the agent. Store actions are labelled as simulated in the audit trail. The summary email to you is real when Gmail is connected. With Gmail connected, Owed reads your real inbox.
+The three stores (Northwind Electronics, Cascade Outfitters, Brightline Home), their policies, orders and the demo inbox are fictional. They live in `data/`. The mock store API (`/merchant/...`) validates every claim against its own rules, independently of the agent. Store actions are labelled as simulated in the audit trail. The earlier-claims history in `data/memory_seed.json` is fictional too; `reset_memory.command` (or `uv run python -m owed.cli memory-reset`) clears Cognee and loads it. The summary email to you is real when Gmail is connected. With Gmail connected, Owed reads your real inbox.

@@ -13,11 +13,13 @@ Cognee Cloud REST (per-tenant base URL from the API Keys page, header X-Api-Key)
 """
 from __future__ import annotations
 
+import hashlib
+import json
 import logging
 import threading
 from typing import Any
 
-from ..config import settings
+from ..config import DATA, RUNTIME, settings
 
 log = logging.getLogger("owed.cognee")
 SEARCH_TIMEOUT_S = 30
@@ -112,23 +114,58 @@ def recall(merchant: str) -> dict[str, Any]:
         return out
 
 
-def remember(texts: list[str]) -> dict[str, Any]:
-    """Write outcomes to memory. Runs add + cognify in the background on Cognee's side."""
+_WRITTEN = RUNTIME / "cognee_written.json"
+
+
+def _written() -> set[str]:
+    try:
+        return set(json.loads(_WRITTEN.read_text()))
+    except (OSError, ValueError):
+        return set()
+
+
+def remember(texts: list[str], keys: list[str] | None = None, background: bool = True) -> dict[str, Any]:
+    """Write outcomes to memory (add + cognify on Cognee's side). Each outcome key is written once."""
     if not enabled() or not texts:
         return {"ok": False, "note": "nothing to remember" if enabled() else "Cognee not configured"}
+    keys = keys or [hashlib.sha1(t.encode()).hexdigest()[:16] for t in texts]
+    seen = _written()
+    fresh = [(k, t) for k, t in zip(keys, texts) if k not in seen]
+    if not fresh:
+        return {"ok": True, "items": 0, "note": "already in memory", "dataset": settings.cognee_dataset}
     httpx = _client()
-    fields = [("raw_data", (None, t)) for t in texts]
-    fields += [("datasetName", (None, settings.cognee_dataset)), ("run_in_background", (None, "true"))]
-    r = httpx.post(f"{_base()}/api/v1/remember", headers=_headers(), files=fields, timeout=30)
+    fields = [("raw_data", (None, t)) for _, t in fresh]
+    fields += [("datasetName", (None, settings.cognee_dataset)),
+               ("run_in_background", (None, "true" if background else "false"))]
+    r = httpx.post(f"{_base()}/api/v1/remember", headers=_headers(), files=fields, timeout=30 if background else 240)
     if r.status_code >= 400:
         raise RuntimeError(f"HTTP {r.status_code}: {r.text[:200]}")
     try:
         body = r.json()
     except ValueError:
         body = {"text": r.text[:200]}
-    return {"ok": True, "items": len(texts), "dataset": settings.cognee_dataset,
+    _WRITTEN.write_text(json.dumps(sorted(seen | {k for k, _ in fresh})))
+    return {"ok": True, "items": len(fresh), "skipped": len(texts) - len(fresh), "dataset": settings.cognee_dataset,
             "pipeline_run_id": body.get("pipeline_run_id") if isinstance(body, dict) else None,
             "raw_sample": str(body)[:300]}
+
+
+def reset_memory() -> str:
+    """Forget the memory dataset and load the demo history (blocking until the graph is built)."""
+    if not enabled():
+        return "SKIP: Cognee not configured"
+    httpx = _client()
+    forgot = ""
+    for body in ({"dataset": settings.cognee_dataset}, {"dataset_name": settings.cognee_dataset}):
+        r = httpx.post(f"{_base()}/api/v1/forget", headers=_headers(True), json=body, timeout=60)
+        forgot = f"forget {list(body)[0]} -> HTTP {r.status_code} {r.text[:120]}"
+        if r.status_code < 400:
+            break
+    _WRITTEN.unlink(missing_ok=True)
+    reset_cache()
+    seed = json.loads((DATA / "memory_seed.json").read_text())["history"]
+    res = remember(seed, background=False)
+    return f"{forgot}; loaded {res.get('items')} demo history entries ({str(res.get('raw_sample'))[:160]})"
 
 
 def smoke() -> str:

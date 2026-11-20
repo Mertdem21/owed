@@ -53,6 +53,7 @@
   .ok { color: var(--money); font-weight: 700; } .x { color: var(--bad); font-weight: 700; }
   .quote { border-left: 3px solid var(--ink); padding: 4px 0 4px 14px; font-size: 16px; }
   .src { color: var(--muted); font-size: 13px; margin-top: 6px; }
+  .memory { background: #f4f1fb; border-radius: 8px; padding: 10px 14px; font-size: 14px; }
   .timeline { list-style: none; padding: 0; margin: 0; position: relative; }
   .timeline li { position: relative; padding: 0 0 16px 22px; }
   .timeline li::before { content: ""; position: absolute; left: 5px; top: 7px; width: 9px; height: 9px; border-radius: 50%; background: var(--ink); }
@@ -143,6 +144,7 @@ async function select(id) {
     <div class="quote">“${esc(rule.clause_quote)}”</div>
     <div class="src">${esc(best.title || "")} · source ${esc(best.source_id || "")} · read by ${esc(rule.provider || "")} · ${rule.citation_verified ? "citation verified against source" : "citation NOT verified"}</div>
     ${factCheckHtml(events)}
+    ${memoryHtml(events)}
     <div class="section-label">Checks</div>
     <ul class="checks">${dec.checks.map(k => `<li><span class="${k.passed ? "ok" : "x"}">${k.passed ? "✓" : "✗"}</span><span><b>${esc(k.name)}</b> - ${esc(k.detail)}</span></li>`).join("")}</ul>
     <div class="section-label">What the agent did</div>
@@ -156,7 +158,15 @@ function factCheckHtml(events) {
   const color = {verified: "ok", conflict: "x", unsupported: "x"};
   return `<div class="section-label">Fact-check by Senso${m.accuracy_pct != null ? ` · accuracy ${m.accuracy_pct}% · coverage ${m.coverage_pct}%` : ""}</div>
     <ul class="checks">${d.verdicts.map(v => `<li><span class="${color[v.verdict] || ""}">${v.verdict === "verified" ? "✓" : (v.verdict === "conflict" ? "✗" : "·")}</span>
-      <span><b>${esc(v.verdict)}</b> - ${esc(v.claim)}</span></li>`).join("")}</ul>`;
+      <span><b>${esc(v.verdict)}</b> - ${esc(v.claim)}${v.quote && v.verdict === "verified" ? `<div class="src">evidence${v.evidence_store ? ` from ${esc(v.evidence_store)} policy` : ""}: "${esc(v.quote)}"</div>` : ""}${v.why && v.verdict !== "verified" ? `<div class="src">${esc(v.why)}</div>` : ""}</span></li>`).join("")}</ul>`;
+}
+
+function memoryHtml(events) {
+  const m = events.filter(e => e.step === "memory").pop();
+  if (!m) return "";
+  const d = m.data || {};
+  return `<div class="section-label">Memory of this store · Cognee</div>
+    <div class="memory">${esc(d.answer || d.error || "No earlier claims.")}</div>`;
 }
 
 function stepHtml(e) {

@@ -1,0 +1,9 @@
+{
+  "_note": "Fictional earlier claims (demo data), loaded into Cognee by `python -m owed.cli memory-reset`.",
+  "history": [
+    "On 2026-10-03, Owed filed a price adjustment for Northwind Electronics order NW-46011 (USB-C Charging Cable, 2 m), amount $6.00. Outcome: Northwind Electronics approved claim NO-CLM-3F21A0 and paid refund RF-11A93C20 of $6.00 within two minutes.",
+    "On 2026-10-17, Owed reviewed a price adjustment for Northwind Electronics order NW-46802 (Wireless Mouse) sold by a Marketplace seller. Outcome: Owed did not file a claim, because Northwind Electronics excludes Marketplace seller items from price adjustments.",
+    "On 2026-09-22, Owed filed a return at Cascade Outfitters for order CO-88710 (Trail Socks, 3-pack), amount $18.00. Outcome: Cascade Outfitters rejected claim CA-CLM-1E07B2 because the tags had been removed. Owed told the customer and did not retry.",
+    "On 2026-10-28, Owed filed a duplicate charge refund at Brightline Home for order BH-5101 (Ceramic Table Lamp), amount $42.00. Outcome: Brightline Home approved claim BR-CLM-0D4A11 and paid refund RF-77D0B214 of $42.00 after five business days."
+  ]
+}

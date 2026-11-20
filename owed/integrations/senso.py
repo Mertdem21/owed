@@ -128,6 +128,20 @@ def _verdict(c: dict[str, Any]) -> str:
     return "not_checked"
 
 
+_org_name: str | None = None
+
+
+def org_name() -> str:
+    """Name of the Senso organisation (cached). Senso phrases fact-check claims about it."""
+    global _org_name
+    if _org_name is None:
+        try:
+            _org_name = str(request("GET", _url("/org/me"), headers=_headers()).get("name") or "")
+        except Exception:  # noqa: BLE001
+            _org_name = ""
+    return _org_name
+
+
 def check_text(text: str, question: str, max_wait_s: int = 75) -> dict[str, Any]:
     """Senso fact-check: every claim in `text` is checked against the knowledge base.
     POST /org/evals/text {text, author, question, wait} -> run; GET /org/evals/runs/{runId} until completed.

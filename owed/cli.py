@@ -40,11 +40,16 @@ def main() -> None:
     sub = p.add_subparsers(dest="cmd", required=True)
     r = sub.add_parser("run")
     r.add_argument("--reset", action="store_true", help="clear previous cases and claims first")
+    sub.add_parser("memory-reset", help="clear Cognee memory and load the demo history")
     s = sub.add_parser("smoke")
     s.add_argument("name", nargs="?", help="arcee | senso | sie | statsig | amplitude | singlestore | cognee | gmail")
     a = p.parse_args()
     if a.cmd == "run":
         cmd_run(a.reset)
+    elif a.cmd == "memory-reset":
+        from .integrations import cognee_memory
+
+        print(cognee_memory.reset_memory())
     else:
         cmd_smoke(a.name)
 
