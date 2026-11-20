@@ -241,8 +241,9 @@ def run(reset: bool = False, verbose: bool = False, run_id: str | None = None) -
 
     t0 = time.time()
     emails, inbox_provider = gmail_airbyte.fetch_emails()
-    rec.step(None, "ingest", inbox_provider, f"Read {len(emails)} emails from the inbox",
-             {"subjects": [e.subject for e in emails]}, t0)
+    rec.step(None, "ingest", inbox_provider, f"Read {len(emails)} emails from the inbox (read-only)",
+             {"subjects": [e.subject for e in emails],
+              "emails": [{"id": e.id, "sender": e.sender, "subject": e.subject, "date": e.date} for e in emails]}, t0)
 
     t0 = time.time()
     orders, report = parse_orders(emails)
@@ -252,6 +253,20 @@ def run(reset: bool = False, verbose: bool = False, run_id: str | None = None) -
              f"{len(receipts)} receipt emails -> {len(orders)} orders "
              f"({sum(len(o.items) for o in orders)} items, {sum(len(o.transactions) for o in orders)} payments)",
              {"report": report, "orders": [o.model_dump(mode="json") for o in orders]}, t0)
+
+    # Today's price for every item bought (the store's product API; on the web: the product page's price markup)
+    t0 = time.time()
+    price_checks = []
+    for o in orders:
+        for it in o.items:
+            live = merchant_client.current_price(o.merchant_id, it.sku)
+            if live:
+                price_checks.append({"order_id": o.order_id, "merchant": o.merchant, "item": it.name, "paid": it.price,
+                                     "now": live["price"], "drop": round(it.price - live["price"], 2)})
+    drops = [p for p in price_checks if p["drop"] > 0.009]
+    rec.step(None, "prices", "merchant-api",
+             f"Checked today's price for {len(price_checks)} items: {len(drops)} cheaper than you paid",
+             {"checks": price_checks}, t0)
 
     t0 = time.time()
     ops = find_opportunities(orders)

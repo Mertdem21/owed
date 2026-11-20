@@ -32,7 +32,9 @@ def index() -> FileResponse:
 @app.get("/api/status")
 def status() -> dict[str, Any]:
     integrations = {**settings.enabled(), "arcee": arcee.healthy()}  # a key without credits is not "live"
+    inbox = "gmail" if integrations.get("airbyte_gmail") else "demo inbox"
     return {"integrations": integrations, "storage": get_store().backend, "today": settings.today().isoformat(),
+            "inbox": inbox,
             "arcee_models": {k: v for k, v in arcee._models.items() if k != "available"}}
 
 
@@ -79,6 +81,13 @@ def run_feed(run_id: str) -> dict[str, Any]:
             item["opportunity"] = d.get("opportunity")
         if e["step"] == "verification":
             item["refund"] = (d.get("status") or {}).get("refund_amount")
+        if e["step"] == "ingest":
+            item["emails"] = d.get("emails") or [{"id": str(i), "subject": sub} for i, sub in enumerate(d.get("subjects") or [])]
+        if e["step"] == "extract":
+            item["report"] = [{k: r.get(k) for k in ("email_id", "subject", "receipt", "merchant", "order_id", "sie_cross_check")}
+                              for r in d.get("report") or []]
+        if e["step"] == "prices":
+            item["checks"] = d.get("checks") or []
         feed.append(item)
     return {"run_id": run_id, **_runs.get(run_id, {"done": True}), "events": feed}
 

@@ -38,9 +38,9 @@
   .chip.live { color: var(--ink); } .chip.live::before { background: var(--green); box-shadow: 0 0 0 3px var(--green-soft); }
 
   /* hero */
-  .hero { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 28px; padding: 34px 0 26px; }
+  .hero { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 28px; padding: 26px 0 16px; }
   .eyebrow { font: 600 12px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
-  .total { font: 650 104px/0.95 var(--display); letter-spacing: -0.045em; color: var(--green); font-variant-numeric: tabular-nums lining-nums; margin: 10px 0 12px; }
+  .total { font: 650 96px/0.95 var(--display); letter-spacing: -0.045em; color: var(--green); font-variant-numeric: tabular-nums lining-nums; margin: 10px 0 12px; }
   .subline { font-size: 17px; color: #3e3a33; min-height: 26px; }
   .charter { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
   .charter span { font: 500 12px/1 var(--mono); padding: 7px 10px; border: 1px dashed #b7ad97; border-radius: 6px; color: #4b463d; background: rgba(251,248,241,.6); }
@@ -57,8 +57,24 @@
   @keyframes spin { to { transform: rotate(360deg); } }
   .cta small { display: block; margin-top: 10px; font: 500 12px/1 var(--mono); color: var(--muted); }
 
+  /* inbox */
+  .inbox { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+  .mail { background: rgba(251,248,241,.8); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px 9px; animation: rise .3s ease both; transition: opacity .3s ease, border-color .3s ease; }
+  .mail .mtop { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+  .mail .from { font: 600 10px/1.2 var(--mono); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mail .subj { font-size: 12.5px; line-height: 1.3; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tagm { flex: none; font: 700 9.5px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; padding: 3px 6px; border-radius: 4px; white-space: nowrap; }
+  .tag-scan { color: var(--muted); background: #e4dccb; }
+  .tag-order { color: #fff; background: var(--green); }
+  .tag-pay { color: #fff; background: #2f5d8a; }
+  .tag-deliv { color: #fff; background: #6b5a2e; }
+  .tag-ignored { color: var(--muted); border: 1px dashed #b7ad97; }
+  .mail.order, .mail.pay, .mail.deliv { border-color: #b9ab8d; }
+  .mail.ignored { opacity: .5; }
+  .mail.ignored .subj { text-decoration: line-through; }
+
   /* section labels */
-  .label { display: flex; align-items: center; gap: 12px; font: 600 12px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 26px 0 14px; }
+  .label { display: flex; align-items: center; gap: 12px; font: 600 12px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 22px 0 12px; }
   .label::after { content: ""; flex: 1; border-top: 1px dashed #c3b9a3; }
 
   /* receipts (shared) */
@@ -183,7 +199,10 @@
     <div class="livebox" id="livebox"></div>
   </section>
 
-  <div class="label">Found in your inbox</div>
+  <div class="label" id="inboxlabel" hidden>Inbox</div>
+  <section class="inbox" id="inbox"></section>
+
+  <div class="label">Money you are owed</div>
   <section class="strip" id="strip"></section>
 
   <div class="label" id="stagelabel">The receipt</div>
@@ -203,7 +222,7 @@ const TAGC = {SENSO: "#7fd8aa", SUPERLINKED: "#8db6ff", COGNEE: "#cfaeff", STATS
 const STEP_STATE = {detected: "Found it", context: "Reading the store's policy", rule: "Reading the rule", decision: "Eligible, checking autonomy",
                     autonomy_gate: "Writing the claim", claim_drafted: "Senso is fact-checking", fact_check: "Checking past claims",
                     memory: "Filing the claim", action: "Waiting for the store"};
-let state = {cases: [], selected: null, total: 0, shown: 0, live: {}, running: false};
+let state = {cases: [], selected: null, total: 0, shown: 0, live: {}, running: false, inbox: "demo inbox"};
 
 async function api(path, opts) { const r = await fetch(path, opts); if (!r.ok) throw new Error(await r.text()); return r.json(); }
 
@@ -237,6 +256,7 @@ function countTo(target) {
 
 async function loadStatus() {
   const s = await api("/api/status");
+  state.inbox = s.inbox || "demo inbox";
   $("chips").innerHTML = Object.entries(s.integrations).filter(([k]) => k !== "airbyte_gmail").map(([k, v]) =>
     `<span class="chip ${v ? "live" : ""}">${NAMES[k] || k}</span>`).join("")
     + `<span class="chip ${s.storage === "singlestore" ? "live" : ""}">audit: ${s.storage}</span>`;
@@ -249,7 +269,8 @@ function miniHtml(c, opts = {}) {
   return `<div class="receipt mini ${c.status ? "done-" + c.status : ""}" data-id="${esc(c.id)}" id="mini-${cssId(c.id)}">
     <div class="m-store">${esc(c.opportunity.merchant)}</div>
     <div class="m-item">${esc(c.opportunity.item_name)}</div>
-    <div class="m-kind">${LABEL[c.opportunity.kind] || ""}</div>
+    <div class="m-kind">${c.opportunity.kind === "price_adjustment" && (c.opportunity.facts || {}).paid != null
+      ? `paid ${money(c.opportunity.facts.paid)} · now ${money(c.opportunity.facts.current_price)}` : (LABEL[c.opportunity.kind] || "")}</div>
     <div class="m-amt">${money(amt)}</div>
     <div class="m-state ${opts.busy ? "busy" : ""}">${esc(opts.stateText || (c.status === "verified" ? "refund " + (c.refund_id || "") : (c.decision || {}).reason || ""))}</div>
     ${st ? `<div class="stamp ${st[1]} ${opts.animate ? "anim" : ""}">${st[0]}</div>` : ""}
@@ -274,6 +295,39 @@ async function loadCases(selectId, animateStamps = false) {
   if (first) select(first);
 }
 
+/* ---------- inbox ---------- */
+function mailKind(r) {
+  if (!r || !r.receipt) return ["ignored", "skipped"];
+  const sub = String(r.subject || "").toLowerCase(), id = r.order_id || "";
+  if (sub.includes("payment")) return ["pay", "payment " + id];
+  if (sub.includes("deliver")) return ["deliv", "delivered " + id];
+  return ["order", "receipt " + id];
+}
+function renderInbox(emails) {
+  $("inboxlabel").hidden = false;
+  $("inboxlabel").textContent = `Inbox · ${emails.length} emails · ${state.inbox === "gmail" ? "Gmail" : "demo inbox"} · read-only`;
+  $("inbox").innerHTML = emails.map((m, i) => `<div class="mail" id="mail-${cssId(m.id)}" style="animation-delay:${i * 35}ms">
+    <div class="mtop"><span class="from">${esc(String(m.sender || "").replace(/^.*@/, "@"))}</span><span class="tagm tag-scan">scanning</span></div>
+    <div class="subj" title="${esc(m.subject)}">${esc(m.subject)}</div></div>`).join("");
+}
+async function tagInbox(report, animate) {
+  for (const r of report || []) {
+    const el = document.getElementById("mail-" + cssId(r.email_id)); if (!el) continue;
+    const [k, label] = mailKind(r);
+    el.classList.add(k);
+    const t = el.querySelector(".tagm"); t.className = "tagm tag-" + k; t.textContent = label;
+    if (animate) await sleep(70);
+  }
+}
+async function loadInboxFromRun(runId) {
+  if (!runId) return;
+  try {
+    const f = await api(`/api/runs/${encodeURIComponent(runId)}/feed`);
+    const ing = f.events.find(e => e.step === "ingest"), ext = f.events.find(e => e.step === "extract");
+    if (ing && ing.emails) { renderInbox(ing.emails); if (ext) tagInbox(ext.report, false); }
+  } catch (e) { /* the inbox panel is optional */ }
+}
+
 /* ---------- live run ---------- */
 function tapeShell() {
   $("hero").classList.add("running");
@@ -294,7 +348,9 @@ function applyEvent(e) {
   const big = ["detect", "verification", "notify"].includes(e.step) || (e.step === "decision" && /^Not eligible/.test(e.summary));
   tapeLine(tstr, tagHtml(e.provider), e.summary, big);
   if (!e.case_id) {
-    if (e.step === "ingest") $("subline").textContent = e.summary + "…";
+    if (e.step === "ingest") { $("subline").textContent = e.summary + "…"; if (e.emails) renderInbox(e.emails); }
+    if (e.step === "extract") { $("subline").textContent = e.summary; tagInbox(e.report, true); }
+    if (e.step === "prices") $("subline").textContent = e.summary;
     if (e.step === "detect") $("subline").textContent = e.summary + ". Working them in parallel…";
     return;
   }
@@ -327,7 +383,8 @@ $("run").onclick = async () => {
   if (state.running) return;
   state.running = true; state.live = {}; state.shown = 0; countTo(0);
   $("run").disabled = true; $("runlabel").textContent = "Agent at work";
-  $("strip").innerHTML = ""; $("subline").textContent = "Reading your inbox…"; tapeShell();
+  $("strip").innerHTML = ""; $("inbox").innerHTML = ""; $("inboxlabel").hidden = true;
+  $("subline").textContent = "Reading your inbox…"; tapeShell();
   const t0 = performance.now();
   const clock = setInterval(() => { const c = $("tapeclock"); if (c) c.textContent = ((performance.now() - t0) / 1000).toFixed(1) + " s"; }, 100);
   let seen = 0, feed = null;
@@ -444,7 +501,7 @@ function memoryHtml(events) {
 
 async function approve(id) { await api(`/api/cases/${encodeURIComponent(id)}/approve`, {method: "POST"}); await loadCases(id); }
 
-loadStatus(); loadCases();
+loadStatus().then(async () => { const d = await api("/api/cases"); await loadCases(); if (d.latest_run_id) loadInboxFromRun(d.latest_run_id); });
 </script>
 </body>
 </html>
