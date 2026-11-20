@@ -20,11 +20,11 @@ def cmd_run(reset: bool, inbox: str | None = None) -> None:
 
 
 def cmd_smoke(name: str | None) -> None:
-    from .integrations import amplitude, arcee, cognee_memory, gmail_airbyte, senso, sie, statsig_gate, store
+    from .integrations import amplitude, arcee, cognee_memory, gmail_airbyte, gmail_imap, senso, sie, statsig_gate, store
 
     checks = {"arcee": arcee.smoke, "senso": senso.smoke, "sie": sie.smoke, "statsig": statsig_gate.smoke,
               "amplitude": amplitude.smoke, "singlestore": store.smoke, "cognee": cognee_memory.smoke,
-              "gmail": gmail_airbyte.smoke}
+              "gmail": gmail_airbyte.smoke, "gmail_imap": gmail_imap.smoke}
     for key, fn in checks.items():
         if name and name != key:
             continue

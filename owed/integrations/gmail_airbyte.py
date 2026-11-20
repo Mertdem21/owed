@@ -123,6 +123,13 @@ def fetch_emails(limit: int = 50, inbox: str | None = None) -> tuple[list[Email]
     """Returns (emails, provider). An explicit local inbox (e.g. 'test') never touches Gmail."""
     if inbox:
         return load_local_inbox(inbox), f"{inbox}-inbox"
+    from . import gmail_imap  # real Gmail through IMAP + app password (read-only), when configured
+
+    if gmail_imap.enabled():
+        mails = gmail_imap.fetch()
+        if mails:
+            return mails, "gmail-imap"
+        log.warning("Gmail IMAP returned no messages (%s), using the next inbox source", gmail_imap.last_error or "empty")
     if enabled():
         try:
             emails = _run(_fetch_gmail(limit))

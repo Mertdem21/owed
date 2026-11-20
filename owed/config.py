@@ -41,6 +41,9 @@ class Settings:
     google_client_id: str = field(default_factory=lambda: _env("GOOGLE_CLIENT_ID"))
     google_client_secret: str = field(default_factory=lambda: _env("GOOGLE_CLIENT_SECRET"))
     google_refresh_token: str = field(default_factory=lambda: _env("GOOGLE_REFRESH_TOKEN"))
+    gmail_address: str = field(default_factory=lambda: _env("GMAIL_ADDRESS"))
+    gmail_app_password: str = field(default_factory=lambda: _env("GMAIL_APP_PASSWORD"))
+    gmail_query: str = field(default_factory=lambda: _env("GMAIL_QUERY", "category:purchases newer_than:60d"))
     cognee_api_key: str = field(default_factory=lambda: _env("COGNEE_API_KEY"))
     cognee_base_url: str = field(default_factory=lambda: _env("COGNEE_BASE_URL"))  # per-tenant URL from the API Keys page
     cognee_tenant_id: str = field(default_factory=lambda: _env("COGNEE_TENANT_ID"))
@@ -70,6 +73,8 @@ class Settings:
             "singlestore": bool(self.singlestore_url),
             "cognee": bool(self.cognee_api_key and self.cognee_base_url),
             "airbyte_gmail": bool(self.google_client_id and self.google_client_secret and self.google_refresh_token),
+            "gmail": bool(self.gmail_address and self.gmail_app_password)
+            or bool(self.google_client_id and self.google_client_secret and self.google_refresh_token),
         }
 
 

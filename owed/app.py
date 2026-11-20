@@ -32,7 +32,7 @@ def index() -> FileResponse:
 @app.get("/api/status")
 def status() -> dict[str, Any]:
     integrations = {**settings.enabled(), "arcee": arcee.healthy()}  # a key without credits is not "live"
-    inbox = "gmail" if integrations.get("airbyte_gmail") else "demo inbox"
+    inbox = "gmail" if integrations.get("gmail") else "demo inbox"
     return {"integrations": integrations, "storage": get_store().backend, "today": settings.today().isoformat(),
             "inbox": inbox,
             "arcee_models": {k: v for k, v in arcee._models.items() if k != "available"}}

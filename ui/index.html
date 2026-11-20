@@ -216,9 +216,9 @@ const esc = (s) => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&l
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 const LABEL = {price_adjustment: "Price dropped after purchase", duplicate_order: "Ordered twice", billing_error: "Charged twice"};
 const STAMP = {verified: ["Refunded", "green"], declined: ["Declined", "red"], rejected: ["Rejected", "red"], needs_approval: ["Needs your OK", "amber"], failed: ["Failed", "red"]};
-const NAMES = {senso: "Senso", superlinked_sie: "Superlinked", arcee: "Arcee", amplitude: "Amplitude", statsig: "Statsig", singlestore: "SingleStore", cognee: "Cognee", airbyte_gmail: "Gmail"};
+const NAMES = {senso: "Senso", superlinked_sie: "Superlinked", arcee: "Arcee", amplitude: "Amplitude", statsig: "Statsig", singlestore: "SingleStore", cognee: "Cognee", airbyte_gmail: "Airbyte", gmail: "Gmail"};
 const TAGC = {SENSO: "#7fd8aa", SUPERLINKED: "#8db6ff", COGNEE: "#cfaeff", STATSIG: "#ffd27a", "STORE API": "#ff9e88", CODE: "#e8e1d2",
-              INBOX: "#98d9ea", NOTIFY: "#98d9ea", ARCEE: "#ffb3c8", TEMPLATE: "#b6ae9f", AMPLITUDE: "#6fc3ff", SINGLESTORE: "#c6a2ff"};
+              INBOX: "#98d9ea", NOTIFY: "#98d9ea", ARCEE: "#ffb3c8", TEMPLATE: "#b6ae9f", GMAIL: "#f6c177", AMPLITUDE: "#6fc3ff", SINGLESTORE: "#c6a2ff"};
 const STEP_STATE = {detected: "Found it", context: "Reading the store's policy", rule: "Reading the rule", decision: "Eligible, checking autonomy",
                     autonomy_gate: "Writing the claim", claim_drafted: "Senso is fact-checking", fact_check: "Checking past claims",
                     memory: "Filing the claim", action: "Waiting for the store"};
@@ -236,7 +236,8 @@ function tags(p) {
   if (p.includes("statsig")) t.push("STATSIG");
   if (p.includes("arcee")) t.push("ARCEE");
   if (p.includes("merchant")) t.push("STORE API");
-  if (p.includes("inbox") || p.includes("gmail") || p.includes("airbyte")) t.push("INBOX");
+  if (p.includes("gmail")) t.push("GMAIL");
+  else if (p.includes("inbox") || p.includes("airbyte")) t.push("INBOX");
   if (p.includes("outbox")) t.push("NOTIFY");
   if (p.includes("template")) t.push("TEMPLATE");
   if (p.includes("rules") || p.includes("registry") || p === "owed" || p === "default" || p === "user") t.push("CODE");
