@@ -5,3 +5,4 @@ data/runtime/
 *.pyc
 .DS_Store
 logs/
+render_env.txt

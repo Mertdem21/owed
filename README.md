@@ -55,6 +55,9 @@ Gmail (Airbyte) ─► extract (rules + Superlinked SIE GLiNER) ─► detect (l
 
 ## Run it
 
+**Hosted (free, no terminal):** [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Mertdem21/owed). Render reads `render.yaml`, installs with uv and starts the app. Then paste your keys under Environment -> Add from .env.
+
+
 On a Mac: double-click `run_setup.command` (install, seed Senso, test keys, one agent run), then `start_app.command` (UI on http://localhost:8000). `test_keys.command` re-tests every key.
 
 ```bash
