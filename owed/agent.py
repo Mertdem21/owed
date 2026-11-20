@@ -23,6 +23,7 @@ from .policies import load_policies, normalize
 from .policy_check import interpret, retrieve
 
 log = logging.getLogger("owed.agent")
+ALREADY_HANDLED = {"filed", "verified", "needs_approval"}
 KIND_LABEL = {"price_adjustment": "Price adjustment", "duplicate_order": "Duplicate order return",
               "billing_error": "Duplicate charge refund"}
 
@@ -154,8 +155,11 @@ def _fact_check(statement: str, question: str, op) -> dict[str, Any]:
     return best
 
 
-def execute_claim(case: Case, rec: Recorder, before_action=None) -> Case:
-    """Act (file the claim at the merchant) and verify the outcome."""
+def execute_claim(case: Case, rec: Recorder, before_action=None, human_approved: bool = False) -> Case:
+    """Act (file the claim at the merchant) and verify the outcome.
+
+    human_approved: the user explicitly approved this claim. A fact-check conflict is then logged, not blocking,
+    otherwise an approved case would loop back to needs_approval forever."""
     op = case.opportunity
     case.message = _claim_message(case, rec)
     if senso.enabled():  # verification loop: fact-check our own claim against the knowledge base before acting
@@ -165,14 +169,18 @@ def execute_claim(case: Case, rec: Recorder, before_action=None) -> Case:
             check = _fact_check(statement, question, op)
             counts = check["counts"]
             summary = ", ".join(f"{n} {v}" for v, n in counts.items()) or "no checkable claims"
-            if counts.get("conflict"):
+            if counts.get("conflict") and human_approved:
+                rec.step(case.id, "fact_check", "senso",
+                         f"Senso found a conflict ({summary}); filing anyway because you approved it", check, t0, ok=False)
+            elif counts.get("conflict"):
                 case.status = "needs_approval"
                 rec.step(case.id, "fact_check", "senso", f"Stopped: Senso found a conflict with the policy ({summary})",
                          check, t0, ok=False)
                 case.updated_at = utcnow()
                 return case
-            rec.step(case.id, "fact_check", "senso",
-                     f"Senso fact-checked the agent's reading of the policy: {summary}", check, t0)
+            else:
+                rec.step(case.id, "fact_check", "senso",
+                         f"Senso fact-checked the agent's reading of the policy: {summary}", check, t0)
         except Exception as exc:  # noqa: BLE001
             rec.step(case.id, "fact_check", "senso", f"Fact-check unavailable, relying on verified citation: {exc}",
                      {}, t0, ok=False)
@@ -262,7 +270,16 @@ def run(reset: bool = False, verbose: bool = False) -> dict[str, Any]:
         rec.step(case.id, "memory", "cognee", f"Memory of earlier claims with {case.opportunity.merchant}: {short}",
                  mem, started, ok=bool(mem.get("ok")))
 
-    def process(op) -> Case:
+    def process(op) -> Case | None:
+        # Idempotency: Owed wakes up daily. A case already filed, refunded or waiting for you is never filed twice.
+        prior = store.case(op.id)
+        if prior and prior.status in ALREADY_HANDLED:
+            when = prior.updated_at.date().isoformat() if prior.updated_at else "earlier"
+            what = f"claim {prior.claim_id}" if prior.claim_id else prior.status.replace("_", " ")
+            rec.step(op.id, "skipped", "owed",
+                     f"Already handled on {when} ({what}, status {prior.status}) - not filing again",
+                     {"prior_status": prior.status, "claim_id": prior.claim_id, "refund_id": prior.refund_id})
+            return None
         case = Case(id=op.id, opportunity=op)
         rec.step(case.id, "detected", "owed", f"{KIND_LABEL[op.kind]} candidate: {op.item_name} ({op.order_id}), ${op.amount:.2f}",
                  {"opportunity": op.model_dump(mode="json")})
@@ -317,8 +334,10 @@ def run(reset: bool = False, verbose: bool = False) -> dict[str, Any]:
 
     workers = max(1, min(settings.parallel_cases, len(ops) or 1))
     with ThreadPoolExecutor(max_workers=workers) as pool:  # cases are independent -> work them in parallel
-        cases: list[Case] = list(pool.map(process, ops))
+        results = list(pool.map(process, ops))
     mem_pool.shutdown(wait=False)
+    cases: list[Case] = [c for c in results if c is not None]
+    skipped = len(results) - len(cases)
 
     _remember(cases, rec, today)
     recovered = round(sum(c.amount_recovered for c in cases), 2)
@@ -326,6 +345,8 @@ def run(reset: bool = False, verbose: bool = False) -> dict[str, Any]:
     lines = [f"- {KIND_LABEL[c.opportunity.kind]}: {c.opportunity.item_name} ({c.opportunity.merchant}) "
              f"${c.amount_recovered:.2f}, refund {c.refund_id}" for c in cases if c.status == "verified"]
     lines += [f"- Needs your OK: {c.opportunity.item_name} ${c.opportunity.amount:.2f}" for c in pending]
+    if skipped:
+        lines.append(f"- {skipped} case(s) were already handled earlier and were not filed again.")
     body = f"Owed recovered ${recovered:.2f} for you today.\n\n" + "\n".join(lines) + \
         "\n\nEvery decision, with the policy sentence behind it, is in your audit trail."
     t0 = time.time()
@@ -333,7 +354,7 @@ def run(reset: bool = False, verbose: bool = False) -> dict[str, Any]:
     rec.step(None, "notify", provider, f"Sent you a summary: ${recovered:.2f} recovered, {len(pending)} waiting for approval",
              {"ref": ref, "body": body}, t0)
     sent = amplitude.flush()
-    return {"run_id": run_id, "recovered": recovered, "cases": [c.model_dump(mode="json") for c in cases],
+    return {"run_id": run_id, "recovered": recovered, "skipped_already_handled": skipped, "cases": [c.model_dump(mode="json") for c in cases],
             "events": len(rec.events), "amplitude_events": sent, "storage": store.backend,
             "llm_calls": list(arcee.usage_log)}
 
@@ -345,7 +366,7 @@ def approve(case_id: str) -> Case | None:
         return case
     rec = Recorder(new_run_id())
     rec.step(case.id, "human_approval", "user", f"You approved the claim for ${case.opportunity.amount:.2f}")
-    execute_claim(case, rec)
+    execute_claim(case, rec, human_approved=True)
     store.save_case(rec.run_id, case)
     _remember([case], rec, settings.today())
     amplitude.flush()
