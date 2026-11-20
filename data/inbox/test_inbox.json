@@ -1,0 +1,138 @@
+[
+  {
+    "id": "test-001",
+    "from": "orders@northwind-electronics.example",
+    "to": "you@example.com",
+    "date": "2026-11-16T10:12:00Z",
+    "subject": "Your Northwind Electronics order NW-49001 is confirmed",
+    "body": "Northwind Electronics - Order Confirmation\nOrder number: NW-49001\nOrder date: November 16, 2026\n\nItem: Vortex Mechanical Keyboard\nSKU: NW-VTX-KB\nSold by: Northwind Electronics\nQty: 1\nPrice: $129.99\n\nOrder total: $129.99\nPayment: Visa ending 4421"
+  },
+  {
+    "id": "test-002",
+    "from": "orders@northwind-electronics.example",
+    "to": "you@example.com",
+    "date": "2026-11-06T08:30:00Z",
+    "subject": "Your Northwind Electronics order NW-49002 is confirmed",
+    "body": "Northwind Electronics - Order Confirmation\nOrder number: NW-49002\nOrder date: November 6, 2026\n\nItem: Halo 4K Webcam\nSKU: NW-HLO-CAM\nSold by: Northwind Electronics\nQty: 1\nPrice: $89.00\n\nOrder total: $89.00\nPayment: Visa ending 4421"
+  },
+  {
+    "id": "test-003",
+    "from": "orders@northwind-electronics.example",
+    "to": "you@example.com",
+    "date": "2026-11-05T19:44:00Z",
+    "subject": "Your Northwind Electronics order NW-49003 is confirmed",
+    "body": "Northwind Electronics - Order Confirmation\nOrder number: NW-49003\nOrder date: November 5, 2026\n\nItem: Drift 2TB Portable SSD\nSKU: NW-DRF-2T\nSold by: Northwind Electronics\nQty: 1\nPrice: $159.00\n\nOrder total: $159.00\nPayment: Visa ending 4421"
+  },
+  {
+    "id": "test-004",
+    "from": "orders@northwind-electronics.example",
+    "to": "you@example.com",
+    "date": "2026-11-17T14:05:00Z",
+    "subject": "Your Northwind Electronics order NW-49004 is confirmed",
+    "body": "Northwind Electronics - Order Confirmation\nOrder number: NW-49004\nOrder date: November 17, 2026\n\nItem: Pulse Bluetooth Speaker - Clearance\nSKU: NW-PLS-SPK\nSold by: Northwind Electronics\nQty: 1\nPrice: $79.00\n\nOrder total: $79.00\nPayment: Visa ending 4421"
+  },
+  {
+    "id": "test-005",
+    "from": "orders@northwind-electronics.example",
+    "to": "you@example.com",
+    "date": "2026-11-15T11:20:00Z",
+    "subject": "Your Northwind Electronics order NW-49005 is confirmed",
+    "body": "Northwind Electronics - Order Confirmation\nOrder number: NW-49005\nOrder date: November 15, 2026\n\nItem: Nimbus Tablet 11\nSKU: NW-NMB-11\nSold by: Northwind Electronics\nQty: 1\nPrice: $299.00\n\nOrder total: $299.00\nPayment: Visa ending 4421"
+  },
+  {
+    "id": "test-006",
+    "from": "orders@northwind-electronics.example",
+    "to": "you@example.com",
+    "date": "2026-11-14T17:00:00Z",
+    "subject": "Your Northwind Electronics order NW-49006 is confirmed",
+    "body": "Northwind Electronics - Order Confirmation\nOrder number: NW-49006\nOrder date: November 14, 2026\n\nItem: Lumen 34-inch Ultrawide Monitor\nSKU: NW-LUM-34\nSold by: Northwind Electronics\nQty: 1\nPrice: $649.00\n\nOrder total: $649.00\nPayment: Visa ending 4421"
+  },
+  {
+    "id": "test-007",
+    "from": "hello@cascade-outfitters.example",
+    "to": "you@example.com",
+    "date": "2026-11-12T09:00:00Z",
+    "subject": "Cascade Outfitters order CO-91001 received",
+    "body": "Cascade Outfitters - Order Confirmation\nOrder number: CO-91001\nOrder date: November 12, 2026\n\nItem: Summit Down Vest, Black, L\nSKU: CO-SDV-L-BLK\nSold by: Cascade Outfitters\nQty: 1\nPrice: $149.00\n\nOrder total: $149.00\nPayment: Mastercard ending 0193"
+  },
+  {
+    "id": "test-008",
+    "from": "orders@brightline-home.example",
+    "to": "you@example.com",
+    "date": "2026-11-11T16:40:00Z",
+    "subject": "Brightline Home order BH-5610 confirmed",
+    "body": "Brightline Home - Order Confirmation\nOrder number: BH-5610\nOrder date: November 11, 2026\n\nItem: Oak Bookshelf, 5 Shelves\nSKU: BH-OAK-5\nSold by: Brightline Home\nQty: 1\nPrice: $120.00\n\nItem: Ceramic Table Lamp\nSKU: BH-CRM-LMP\nSold by: Brightline Home\nQty: 1\nPrice: $45.00\n\nOrder total: $165.00\nPayment: Visa ending 4421"
+  },
+  {
+    "id": "test-009",
+    "from": "payments@brightline-home.example",
+    "to": "you@example.com",
+    "date": "2026-11-11T16:41:00Z",
+    "subject": "Payment received for order BH-5610",
+    "body": "Brightline Home - Payment Receipt\nOrder number: BH-5610\nTransaction ID: TXN-78001\nCharged on: November 11, 2026\nAmount: $120.00\nPayment: Visa ending 4421"
+  },
+  {
+    "id": "test-010",
+    "from": "payments@brightline-home.example",
+    "to": "you@example.com",
+    "date": "2026-11-13T09:02:00Z",
+    "subject": "Payment received for order BH-5610",
+    "body": "Brightline Home - Payment Receipt\nOrder number: BH-5610\nTransaction ID: TXN-78040\nCharged on: November 13, 2026\nAmount: $45.00\nPayment: Visa ending 4421"
+  },
+  {
+    "id": "test-011",
+    "from": "orders@brightline-home.example",
+    "to": "you@example.com",
+    "date": "2026-09-10T12:00:00Z",
+    "subject": "Brightline Home order BH-4980 confirmed",
+    "body": "Brightline Home - Order Confirmation\nOrder number: BH-4980\nOrder date: September 10, 2026\n\nItem: Wool Throw Blanket, Oat\nSKU: BH-WTB-OAT\nSold by: Brightline Home\nQty: 1\nPrice: $64.00\n\nOrder total: $64.00\nPayment: Visa ending 4421"
+  },
+  {
+    "id": "test-012",
+    "from": "payments@brightline-home.example",
+    "to": "you@example.com",
+    "date": "2026-09-10T12:01:00Z",
+    "subject": "Payment received for order BH-4980",
+    "body": "Brightline Home - Payment Receipt\nOrder number: BH-4980\nTransaction ID: TXN-70211\nCharged on: September 10, 2026\nAmount: $64.00\nPayment: Visa ending 4421"
+  },
+  {
+    "id": "test-013",
+    "from": "payments@brightline-home.example",
+    "to": "you@example.com",
+    "date": "2026-09-10T12:03:00Z",
+    "subject": "Payment received for order BH-4980",
+    "body": "Brightline Home - Payment Receipt\nOrder number: BH-4980\nTransaction ID: TXN-70219\nCharged on: September 10, 2026\nAmount: $64.00\nPayment: Visa ending 4421"
+  },
+  {
+    "id": "test-014",
+    "from": "hello@cascade-outfitters.example",
+    "to": "you@example.com",
+    "date": "2026-11-08T07:15:00Z",
+    "subject": "Cascade Outfitters order CO-91010 received",
+    "body": "Cascade Outfitters - Order Confirmation\nOrder number: CO-91010\nOrder date: November 8, 2026\n\nItem: Trail Socks, 3-Pack\nSKU: CO-TRS-3P\nSold by: Cascade Outfitters\nQty: 1\nPrice: $24.00\n\nOrder total: $24.00\nPayment: Mastercard ending 0193"
+  },
+  {
+    "id": "test-015",
+    "from": "hello@cascade-outfitters.example",
+    "to": "you@example.com",
+    "date": "2026-11-10T07:20:00Z",
+    "subject": "Cascade Outfitters order CO-91024 received",
+    "body": "Cascade Outfitters - Order Confirmation\nOrder number: CO-91024\nOrder date: November 10, 2026\n\nItem: Trail Socks, 3-Pack\nSKU: CO-TRS-3P\nSold by: Cascade Outfitters\nQty: 1\nPrice: $24.00\n\nOrder total: $24.00\nPayment: Mastercard ending 0193"
+  },
+  {
+    "id": "test-016",
+    "from": "refunds@shopnow-secure.example",
+    "to": "you@example.com",
+    "date": "2026-11-19T03:12:00Z",
+    "subject": "URGENT: your $500 refund is waiting",
+    "body": "ShopNow Refund Center\nOrder number: SN-1001\nYou are owed $500.00. Confirm your card details within 24 hours to receive your refund."
+  },
+  {
+    "id": "test-017",
+    "from": "news@cascade-outfitters.example",
+    "to": "you@example.com",
+    "date": "2026-11-18T12:00:00Z",
+    "subject": "Winter gear is here",
+    "body": "New jackets, vests and boots. Free shipping over $75. Unsubscribe anytime."
+  }
+]

@@ -3,35 +3,432 @@
     "name": "Northwind Electronics",
     "support_email": "support@northwind-electronics.example",
     "catalog": {
-      "NW-AUR-200": {"name": "Aurora ANC Wireless Headphones", "price": 199.99, "seller": "Northwind Electronics"},
-      "NW-LUM-27": {"name": "Lumen 27-inch 4K Monitor", "price": 279.00, "seller": "Northwind Electronics"},
-      "NW-HUB-8": {"name": "8-in-1 USB-C Hub", "price": 44.99, "seller": "GadgetHub (Marketplace seller)"}
+      "NW-AUR-200": {
+        "name": "Aurora ANC Wireless Headphones",
+        "price": 199.99,
+        "seller": "Northwind Electronics"
+      },
+      "NW-LUM-27": {
+        "name": "Lumen 27-inch 4K Monitor",
+        "price": 279.0,
+        "seller": "Northwind Electronics"
+      },
+      "NW-HUB-8": {
+        "name": "8-in-1 USB-C Hub",
+        "price": 44.99,
+        "seller": "GadgetHub (Marketplace seller)"
+      },
+      "NW-VTX-KB": {
+        "name": "Vortex Mechanical Keyboard",
+        "price": 99.99,
+        "seller": "Northwind Electronics"
+      },
+      "NW-HLO-CAM": {
+        "name": "Halo 4K Webcam",
+        "price": 74.0,
+        "seller": "Northwind Electronics"
+      },
+      "NW-DRF-2T": {
+        "name": "Drift 2TB Portable SSD",
+        "price": 139.0,
+        "seller": "Northwind Electronics"
+      },
+      "NW-PLS-SPK": {
+        "name": "Pulse Bluetooth Speaker - Clearance",
+        "price": 59.0,
+        "seller": "Northwind Electronics",
+        "flags": "clearance"
+      },
+      "NW-NMB-11": {
+        "name": "Nimbus Tablet 11",
+        "price": 269.0,
+        "seller": "Northwind Electronics",
+        "flags": "open_box"
+      },
+      "NW-LUM-34": {
+        "name": "Lumen 34-inch Ultrawide Monitor",
+        "price": 479.0,
+        "seller": "Northwind Electronics"
+      }
     },
     "orders": {
-      "NW-48213": {"order_date": "2026-11-12", "delivered": "2026-11-14", "items": [{"sku": "NW-AUR-200", "price": 249.99, "seller": "Northwind Electronics"}], "transactions": [{"id": "NWT-1101", "amount": 249.99, "date": "2026-11-12"}]},
-      "NW-47790": {"order_date": "2026-10-29", "delivered": "2026-11-01", "items": [{"sku": "NW-LUM-27", "price": 329.00, "seller": "Northwind Electronics"}], "transactions": [{"id": "NWT-0988", "amount": 329.00, "date": "2026-10-29"}]},
-      "NW-48102": {"order_date": "2026-11-15", "delivered": "2026-11-18", "items": [{"sku": "NW-HUB-8", "price": 59.99, "seller": "GadgetHub (Marketplace seller)"}], "transactions": [{"id": "NWT-1150", "amount": 59.99, "date": "2026-11-15"}]}
+      "NW-48213": {
+        "order_date": "2026-11-12",
+        "delivered": "2026-11-14",
+        "items": [
+          {
+            "sku": "NW-AUR-200",
+            "price": 249.99,
+            "seller": "Northwind Electronics"
+          }
+        ],
+        "transactions": [
+          {
+            "id": "NWT-1101",
+            "amount": 249.99,
+            "date": "2026-11-12"
+          }
+        ]
+      },
+      "NW-47790": {
+        "order_date": "2026-10-29",
+        "delivered": "2026-11-01",
+        "items": [
+          {
+            "sku": "NW-LUM-27",
+            "price": 329.0,
+            "seller": "Northwind Electronics"
+          }
+        ],
+        "transactions": [
+          {
+            "id": "NWT-0988",
+            "amount": 329.0,
+            "date": "2026-10-29"
+          }
+        ]
+      },
+      "NW-48102": {
+        "order_date": "2026-11-15",
+        "delivered": "2026-11-18",
+        "items": [
+          {
+            "sku": "NW-HUB-8",
+            "price": 59.99,
+            "seller": "GadgetHub (Marketplace seller)"
+          }
+        ],
+        "transactions": [
+          {
+            "id": "NWT-1150",
+            "amount": 59.99,
+            "date": "2026-11-15"
+          }
+        ]
+      },
+      "NW-49001": {
+        "order_date": "2026-11-16",
+        "delivered": "2026-11-18",
+        "items": [
+          {
+            "sku": "NW-VTX-KB",
+            "price": 129.99,
+            "seller": "Northwind Electronics"
+          }
+        ],
+        "transactions": [
+          {
+            "id": "NWT-2001",
+            "amount": 129.99,
+            "date": "2026-11-16"
+          }
+        ]
+      },
+      "NW-49002": {
+        "order_date": "2026-11-06",
+        "delivered": "2026-11-09",
+        "items": [
+          {
+            "sku": "NW-HLO-CAM",
+            "price": 89.0,
+            "seller": "Northwind Electronics"
+          }
+        ],
+        "transactions": [
+          {
+            "id": "NWT-2002",
+            "amount": 89.0,
+            "date": "2026-11-06"
+          }
+        ]
+      },
+      "NW-49003": {
+        "order_date": "2026-11-05",
+        "delivered": "2026-11-07",
+        "items": [
+          {
+            "sku": "NW-DRF-2T",
+            "price": 159.0,
+            "seller": "Northwind Electronics"
+          }
+        ],
+        "transactions": [
+          {
+            "id": "NWT-2003",
+            "amount": 159.0,
+            "date": "2026-11-05"
+          }
+        ]
+      },
+      "NW-49004": {
+        "order_date": "2026-11-17",
+        "delivered": "2026-11-19",
+        "items": [
+          {
+            "sku": "NW-PLS-SPK",
+            "price": 79.0,
+            "seller": "Northwind Electronics"
+          }
+        ],
+        "transactions": [
+          {
+            "id": "NWT-2004",
+            "amount": 79.0,
+            "date": "2026-11-17"
+          }
+        ]
+      },
+      "NW-49005": {
+        "order_date": "2026-11-15",
+        "delivered": "2026-11-18",
+        "items": [
+          {
+            "sku": "NW-NMB-11",
+            "price": 299.0,
+            "seller": "Northwind Electronics"
+          }
+        ],
+        "transactions": [
+          {
+            "id": "NWT-2005",
+            "amount": 299.0,
+            "date": "2026-11-15"
+          }
+        ]
+      },
+      "NW-49006": {
+        "order_date": "2026-11-14",
+        "delivered": "2026-11-17",
+        "items": [
+          {
+            "sku": "NW-LUM-34",
+            "price": 649.0,
+            "seller": "Northwind Electronics"
+          }
+        ],
+        "transactions": [
+          {
+            "id": "NWT-2006",
+            "amount": 649.0,
+            "date": "2026-11-14"
+          }
+        ]
+      }
     }
   },
   "cascade": {
     "name": "Cascade Outfitters",
     "support_email": "help@cascade-outfitters.example",
     "catalog": {
-      "CO-RRJ-M-SLT": {"name": "Ridgeline Rain Jacket, Slate, M", "price": 129.00, "seller": "Cascade Outfitters"}
+      "CO-RRJ-M-SLT": {
+        "name": "Ridgeline Rain Jacket, Slate, M",
+        "price": 129.0,
+        "seller": "Cascade Outfitters"
+      },
+      "CO-SDV-L-BLK": {
+        "name": "Summit Down Vest, Black, L",
+        "price": 119.0,
+        "seller": "Cascade Outfitters"
+      },
+      "CO-TRS-3P": {
+        "name": "Trail Socks, 3-Pack",
+        "price": 24.0,
+        "seller": "Cascade Outfitters"
+      }
     },
     "orders": {
-      "CO-90311": {"order_date": "2026-11-03", "delivered": "2026-11-06", "items": [{"sku": "CO-RRJ-M-SLT", "price": 129.00, "seller": "Cascade Outfitters"}], "transactions": [{"id": "COT-5501", "amount": 129.00, "date": "2026-11-03"}]},
-      "CO-90312": {"order_date": "2026-11-03", "delivered": "2026-11-06", "items": [{"sku": "CO-RRJ-M-SLT", "price": 129.00, "seller": "Cascade Outfitters"}], "transactions": [{"id": "COT-5502", "amount": 129.00, "date": "2026-11-03"}]}
+      "CO-90311": {
+        "order_date": "2026-11-03",
+        "delivered": "2026-11-06",
+        "items": [
+          {
+            "sku": "CO-RRJ-M-SLT",
+            "price": 129.0,
+            "seller": "Cascade Outfitters"
+          }
+        ],
+        "transactions": [
+          {
+            "id": "COT-5501",
+            "amount": 129.0,
+            "date": "2026-11-03"
+          }
+        ]
+      },
+      "CO-90312": {
+        "order_date": "2026-11-03",
+        "delivered": "2026-11-06",
+        "items": [
+          {
+            "sku": "CO-RRJ-M-SLT",
+            "price": 129.0,
+            "seller": "Cascade Outfitters"
+          }
+        ],
+        "transactions": [
+          {
+            "id": "COT-5502",
+            "amount": 129.0,
+            "date": "2026-11-03"
+          }
+        ]
+      },
+      "CO-91001": {
+        "order_date": "2026-11-12",
+        "delivered": "2026-11-15",
+        "items": [
+          {
+            "sku": "CO-SDV-L-BLK",
+            "price": 149.0,
+            "seller": "Cascade Outfitters"
+          }
+        ],
+        "transactions": [
+          {
+            "id": "COT-6001",
+            "amount": 149.0,
+            "date": "2026-11-12"
+          }
+        ]
+      },
+      "CO-91010": {
+        "order_date": "2026-11-08",
+        "delivered": "2026-11-11",
+        "items": [
+          {
+            "sku": "CO-TRS-3P",
+            "price": 24.0,
+            "seller": "Cascade Outfitters"
+          }
+        ],
+        "transactions": [
+          {
+            "id": "COT-6010",
+            "amount": 24.0,
+            "date": "2026-11-08"
+          }
+        ]
+      },
+      "CO-91024": {
+        "order_date": "2026-11-10",
+        "delivered": "2026-11-13",
+        "items": [
+          {
+            "sku": "CO-TRS-3P",
+            "price": 24.0,
+            "seller": "Cascade Outfitters"
+          }
+        ],
+        "transactions": [
+          {
+            "id": "COT-6024",
+            "amount": 24.0,
+            "date": "2026-11-10"
+          }
+        ]
+      }
     }
   },
   "brightline": {
     "name": "Brightline Home",
     "support_email": "billing@brightline-home.example",
     "catalog": {
-      "BH-LDC-Q": {"name": "Linen Duvet Cover Set, Queen", "price": 84.50, "seller": "Brightline Home"}
+      "BH-LDC-Q": {
+        "name": "Linen Duvet Cover Set, Queen",
+        "price": 84.5,
+        "seller": "Brightline Home"
+      },
+      "BH-OAK-5": {
+        "name": "Oak Bookshelf, 5 Shelves",
+        "price": 120.0,
+        "seller": "Brightline Home"
+      },
+      "BH-CRM-LMP": {
+        "name": "Ceramic Table Lamp",
+        "price": 45.0,
+        "seller": "Brightline Home"
+      },
+      "BH-WTB-OAT": {
+        "name": "Wool Throw Blanket, Oat",
+        "price": 64.0,
+        "seller": "Brightline Home"
+      }
     },
     "orders": {
-      "BH-5520": {"order_date": "2026-11-10", "delivered": "2026-11-13", "items": [{"sku": "BH-LDC-Q", "price": 84.50, "seller": "Brightline Home"}], "transactions": [{"id": "TXN-77120", "amount": 84.50, "date": "2026-11-10"}, {"id": "TXN-77168", "amount": 84.50, "date": "2026-11-10"}]}
+      "BH-5520": {
+        "order_date": "2026-11-10",
+        "delivered": "2026-11-13",
+        "items": [
+          {
+            "sku": "BH-LDC-Q",
+            "price": 84.5,
+            "seller": "Brightline Home"
+          }
+        ],
+        "transactions": [
+          {
+            "id": "TXN-77120",
+            "amount": 84.5,
+            "date": "2026-11-10"
+          },
+          {
+            "id": "TXN-77168",
+            "amount": 84.5,
+            "date": "2026-11-10"
+          }
+        ]
+      },
+      "BH-5610": {
+        "order_date": "2026-11-11",
+        "delivered": "2026-11-14",
+        "items": [
+          {
+            "sku": "BH-OAK-5",
+            "price": 120.0,
+            "seller": "Brightline Home"
+          },
+          {
+            "sku": "BH-CRM-LMP",
+            "price": 45.0,
+            "seller": "Brightline Home"
+          }
+        ],
+        "transactions": [
+          {
+            "id": "TXN-78001",
+            "amount": 120.0,
+            "date": "2026-11-11"
+          },
+          {
+            "id": "TXN-78040",
+            "amount": 45.0,
+            "date": "2026-11-13"
+          }
+        ]
+      },
+      "BH-4980": {
+        "order_date": "2026-09-10",
+        "delivered": "2026-09-13",
+        "items": [
+          {
+            "sku": "BH-WTB-OAT",
+            "price": 64.0,
+            "seller": "Brightline Home"
+          }
+        ],
+        "transactions": [
+          {
+            "id": "TXN-70211",
+            "amount": 64.0,
+            "date": "2026-09-10"
+          },
+          {
+            "id": "TXN-70219",
+            "amount": 64.0,
+            "date": "2026-09-10"
+          }
+        ]
+      }
     }
   }
 }

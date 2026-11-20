@@ -1,4 +1,4 @@
-"""Command line:  uv run python -m owed.cli run [--reset]   |   uv run python -m owed.cli smoke [name]"""
+"""Command line:  uv run python -m owed.cli run [--reset] [--inbox test]   |   uv run python -m owed.cli smoke [name]"""
 from __future__ import annotations
 
 import argparse
@@ -7,11 +7,11 @@ import logging
 from .config import settings
 
 
-def cmd_run(reset: bool) -> None:
+def cmd_run(reset: bool, inbox: str | None = None) -> None:
     from .agent import run
 
     print(f"Integrations: {settings.enabled()}\n")
-    out = run(reset=reset, verbose=True)
+    out = run(reset=reset, verbose=True, inbox=inbox)
     print(f"\nRecovered ${out['recovered']:.2f} | {out['events']} audit events -> {out['storage']} | "
           f"Amplitude events sent: {out['amplitude_events']}")
     for c in out["cases"]:
@@ -40,12 +40,13 @@ def main() -> None:
     sub = p.add_subparsers(dest="cmd", required=True)
     r = sub.add_parser("run")
     r.add_argument("--reset", action="store_true", help="clear previous cases and claims first")
+    r.add_argument("--inbox", help="run on a local inbox from data/inbox, e.g. 'test' (edge cases) or 'demo'")
     sub.add_parser("memory-reset", help="clear Cognee memory and load the demo history")
     s = sub.add_parser("smoke")
     s.add_argument("name", nargs="?", help="arcee | senso | sie | statsig | amplitude | singlestore | cognee | gmail")
     a = p.parse_args()
     if a.cmd == "run":
-        cmd_run(a.reset)
+        cmd_run(a.reset, a.inbox)
     elif a.cmd == "memory-reset":
         from .integrations import cognee_memory
 

@@ -223,6 +223,8 @@ const STEP_STATE = {detected: "Found it", context: "Reading the store's policy",
                     autonomy_gate: "Writing the claim", claim_drafted: "Senso is fact-checking", fact_check: "Checking past claims",
                     memory: "Filing the claim", action: "Waiting for the store"};
 let state = {cases: [], selected: null, total: 0, shown: 0, live: {}, running: false, inbox: "demo inbox"};
+// Open the page with ?inbox=test to run the edge-case test inbox instead of Gmail / the demo inbox.
+const TEST_INBOX = new URLSearchParams(location.search).get("inbox");
 
 async function api(path, opts) { const r = await fetch(path, opts); if (!r.ok) throw new Error(await r.text()); return r.json(); }
 
@@ -256,7 +258,7 @@ function countTo(target) {
 
 async function loadStatus() {
   const s = await api("/api/status");
-  state.inbox = s.inbox || "demo inbox";
+  state.inbox = TEST_INBOX ? TEST_INBOX + " inbox" : (s.inbox || "demo inbox");
   $("chips").innerHTML = Object.entries(s.integrations).filter(([k]) => k !== "airbyte_gmail").map(([k, v]) =>
     `<span class="chip ${v ? "live" : ""}">${NAMES[k] || k}</span>`).join("")
     + `<span class="chip ${s.storage === "singlestore" ? "live" : ""}">audit: ${s.storage}</span>`;
@@ -305,7 +307,7 @@ function mailKind(r) {
 }
 function renderInbox(emails) {
   $("inboxlabel").hidden = false;
-  $("inboxlabel").textContent = `Inbox · ${emails.length} emails · ${state.inbox === "gmail" ? "Gmail" : "demo inbox"} · read-only`;
+  $("inboxlabel").textContent = `Inbox · ${emails.length} emails · ${state.inbox === "gmail" ? "Gmail" : esc(state.inbox)} · read-only`;
   $("inbox").innerHTML = emails.map((m, i) => `<div class="mail" id="mail-${cssId(m.id)}" style="animation-delay:${i * 35}ms">
     <div class="mtop"><span class="from">${esc(String(m.sender || "").replace(/^.*@/, "@"))}</span><span class="tagm tag-scan">scanning</span></div>
     <div class="subj" title="${esc(m.subject)}">${esc(m.subject)}</div></div>`).join("");
@@ -389,7 +391,7 @@ $("run").onclick = async () => {
   const clock = setInterval(() => { const c = $("tapeclock"); if (c) c.textContent = ((performance.now() - t0) / 1000).toFixed(1) + " s"; }, 100);
   let seen = 0, feed = null;
   try {
-    const {run_id} = await api("/api/run/start?reset=true", {method: "POST"});
+    const {run_id} = await api("/api/run/start?reset=true" + (TEST_INBOX ? "&inbox=" + encodeURIComponent(TEST_INBOX) : ""), {method: "POST"});
     while (true) {
       feed = await api(`/api/runs/${encodeURIComponent(run_id)}/feed`);
       for (const e of feed.events.slice(seen)) { applyEvent(e); await sleep(110); }

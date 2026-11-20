@@ -221,7 +221,8 @@ def execute_claim(case: Case, rec: Recorder, before_action=None, human_approved:
     return case
 
 
-def run(reset: bool = False, verbose: bool = False, run_id: str | None = None) -> dict[str, Any]:
+def run(reset: bool = False, verbose: bool = False, run_id: str | None = None,
+        inbox: str | None = None) -> dict[str, Any]:
     run_id = run_id or new_run_id()
     rec = Recorder(run_id, verbose=verbose)
     store = get_store()
@@ -240,7 +241,7 @@ def run(reset: bool = False, verbose: bool = False, run_id: str | None = None) -
              f"${policy['max_auto_claim_usd']:.0f} per claim", policy, t0)
 
     t0 = time.time()
-    emails, inbox_provider = gmail_airbyte.fetch_emails()
+    emails, inbox_provider = gmail_airbyte.fetch_emails(inbox=inbox)
     rec.step(None, "ingest", inbox_provider, f"Read {len(emails)} emails from the inbox (read-only)",
              {"subjects": [e.subject for e in emails],
               "emails": [{"id": e.id, "sender": e.sender, "subject": e.subject, "date": e.date} for e in emails]}, t0)
