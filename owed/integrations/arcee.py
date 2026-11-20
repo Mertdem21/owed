@@ -51,6 +51,12 @@ SMALL_CANDIDATES = ["trinity-mini", "arcee-ai/trinity-mini", "trinity-mini-think
 LARGE_CANDIDATES = ["trinity-large-thinking", "arcee-ai/trinity-large-thinking", "trinity-large-preview",
                     "arcee-ai/trinity-large-preview", "trinity-large", "arcee-ai/trinity-large"]
 _working: dict[str, str] = {}
+_health: dict[str, str] = {}
+
+
+def healthy() -> bool:
+    """Configured and the last call did not fail (e.g. no credits)."""
+    return enabled() and "error" not in _health
 _errors: list[str] = []
 
 
@@ -114,8 +120,10 @@ def chat(tier: str, system: str, user: str, max_tokens: int = 700, json_mode: bo
             if _is_model_error(exc):
                 _errors.append(f"{model}: {str(exc)[:120]}")
                 continue
+            _health["error"] = str(exc)[:200]
             raise
         _working[tier] = model
+        _health.pop("error", None)
         text = _clean(resp.choices[0].message.content or "")
         usage = getattr(resp, "usage", None)
         meta = {"model": model, "tier": tier, "latency_ms": int((time.time() - t0) * 1000),
@@ -123,6 +131,7 @@ def chat(tier: str, system: str, user: str, max_tokens: int = 700, json_mode: bo
                 "completion_tokens": getattr(usage, "completion_tokens", None)}
         usage_log.append(meta)
         return text, meta
+    _health["error"] = str(last_exc)[:200]
     raise RuntimeError(f"no accessible Arcee model for tier {tier}: {last_exc}")
 
 

@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import logging
+import threading
 from typing import Any
 
 from fastapi import FastAPI, HTTPException
@@ -12,6 +13,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from . import agent, merchant
+from .audit import new_run_id
 from .config import ROOT, settings
 from .integrations import arcee
 from .integrations.store import get_store
@@ -29,13 +31,56 @@ def index() -> FileResponse:
 # --- agent API --------------------------------------------------------------------------------
 @app.get("/api/status")
 def status() -> dict[str, Any]:
-    return {"integrations": settings.enabled(), "storage": get_store().backend, "today": settings.today().isoformat(),
+    integrations = {**settings.enabled(), "arcee": arcee.healthy()}  # a key without credits is not "live"
+    return {"integrations": integrations, "storage": get_store().backend, "today": settings.today().isoformat(),
             "arcee_models": {k: v for k, v in arcee._models.items() if k != "available"}}
 
 
 @app.post("/api/run")
 def run_agent(reset: bool = True) -> dict[str, Any]:
     return agent.run(reset=reset)
+
+
+_runs: dict[str, dict[str, Any]] = {}
+_run_lock = threading.Lock()
+
+
+@app.post("/api/run/start")
+def run_start(reset: bool = True) -> dict[str, Any]:
+    """Start a run in the background; the UI follows it live through /api/runs/{run_id}/feed."""
+    if not _run_lock.acquire(blocking=False):
+        raise HTTPException(409, "a run is already in progress")
+    run_id = new_run_id()
+    _runs[run_id] = {"done": False}
+
+    def work() -> None:
+        try:
+            res = agent.run(reset=reset, run_id=run_id)
+            _runs[run_id] = {"done": True, "recovered": res["recovered"], "storage": res["storage"],
+                             "amplitude_events": res["amplitude_events"], "events_total": res["events"]}
+        except Exception as exc:  # noqa: BLE001
+            logging.getLogger("owed.app").exception("run failed")
+            _runs[run_id] = {"done": True, "error": str(exc)[:300]}
+        finally:
+            _run_lock.release()
+
+    threading.Thread(target=work, daemon=True).start()
+    return {"run_id": run_id}
+
+
+@app.get("/api/runs/{run_id}/feed")
+def run_feed(run_id: str) -> dict[str, Any]:
+    """Every step of a run so far (small fields only), for the live view."""
+    feed = []
+    for e in get_store().events(run_id=run_id):
+        d = e.get("data") or {}
+        item = {k: e.get(k) for k in ("case_id", "ts", "step", "provider", "summary", "duration_ms")}
+        if e["step"] == "detected":
+            item["opportunity"] = d.get("opportunity")
+        if e["step"] == "verification":
+            item["refund"] = (d.get("status") or {}).get("refund_amount")
+        feed.append(item)
+    return {"run_id": run_id, **_runs.get(run_id, {"done": True}), "events": feed}
 
 
 @app.get("/api/cases")

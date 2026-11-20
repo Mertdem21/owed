@@ -205,8 +205,8 @@ def execute_claim(case: Case, rec: Recorder, before_action=None) -> Case:
     return case
 
 
-def run(reset: bool = False, verbose: bool = False) -> dict[str, Any]:
-    run_id = new_run_id()
+def run(reset: bool = False, verbose: bool = False, run_id: str | None = None) -> dict[str, Any]:
+    run_id = run_id or new_run_id()
     rec = Recorder(run_id, verbose=verbose)
     store = get_store()
     if reset:
