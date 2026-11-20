@@ -4,7 +4,7 @@ Every other shopping agent helps you buy. **Owed works after you buy.** It reads
 
 Nobody enjoys fighting for refunds. Stores count on that. Owed doesn't give up, and it never acts without a policy sentence it can cite.
 
-**Watch it work without installing anything:** [replay of a real run](https://claude.ai/artifact/BcrgaWjapjYvYVBo6ioxRe) (recorded on 20 Nov 2026; the agent itself runs locally against the live APIs).
+**Try it live: https://owed-3tov.onrender.com** and press *Run agent* (free hosting: the first load after a quiet spell can take ~50 s).
 
 **Demo result:** 12 emails → 6 orders → 5 possible refunds → **$263.50 recovered** across 3 stores. Two cases were declined with a cited reason: a 22-day-old purchase outside a 14-day window, and a Marketplace-seller item. No human clicks.
 
