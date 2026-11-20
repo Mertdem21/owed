@@ -100,6 +100,22 @@ It never touches Gmail.
 
 Result: **10/10 correct, $45.00 recovered, 1 waiting for approval.**
 
+## Put the emails into a real Gmail inbox
+
+`scripts/send_test_emails.py` places the demo and/or test emails into the Gmail inbox Owed reads (IMAP, same
+`GMAIL_ADDRESS` + `GMAIL_APP_PASSWORD`). They keep their store sender and date, get the Gmail label `owed`, and come
+with a normal store-style HTML design. Stores are fictional, products are real (AirPods Pro, Samsung T7, JBL Flip 6, ...).
+Running it twice adds nothing twice. **Use a separate test Gmail account: the web app is public.**
+
+```bash
+uv run python -m scripts.send_test_emails --inbox all --dry-run   # preview
+uv run python -m scripts.send_test_emails --inbox all             # demo + test emails -> $308.50, 1 waiting for approval
+uv run python -m scripts.send_test_emails --remove                # move them to the trash again
+```
+
+Self-made emails are not in Gmail's Purchases category, so set (in `.env` and on Render):
+`GMAIL_QUERY="{label:owed subject:order subject:receipt subject:payment subject:delivered} newer_than:120d"`
+
 ## Demo data
 
 The three stores (Northwind Electronics, Cascade Outfitters, Brightline Home), their policies, orders and the demo inbox are fictional. They live in `data/`. The mock store API (`/merchant/...`) validates every claim against its own rules, independently of the agent. Store actions are labelled as simulated in the audit trail. The earlier-claims history in `data/memory_seed.json` is fictional too; `reset_memory.command` (or `uv run python -m owed.cli memory-reset`) clears Cognee and loads it. The summary email to you is real when Gmail is connected. With Gmail connected, Owed reads your real inbox.
